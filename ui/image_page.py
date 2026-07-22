@@ -288,7 +288,14 @@ class ImagePage(QWidget):
         panel_title = QLabel("图片成品")
         panel_title.setObjectName("panelTitle")
         panel_layout.addWidget(panel_title)
-        panel_layout.addWidget(QLabel("模板：案例封面 · 1080 × 1350"))
+        panel_layout.addWidget(QLabel("选择发布模板；系统优先使用车辆外观主图。"))
+        self.template_combo = QComboBox()
+        for template in ImageCaseRenderer(CurrentProject.get_project()).list_templates():
+            self.template_combo.addItem(
+                f"{template['name']} · {template['description']}",
+                template["id"],
+            )
+        panel_layout.addWidget(self.template_combo)
 
         self.preview = QLabel("选择“车辆外观”中的素材")
         self.preview.setAlignment(Qt.AlignCenter)
@@ -296,12 +303,14 @@ class ImagePage(QWidget):
         self.preview.setObjectName("preview")
         panel_layout.addWidget(self.preview)
 
-        self.selection_label = QLabel("尚未选择素材")
+        self.selection_label = QLabel("未选择时会自动使用车辆外观主图。")
         panel_layout.addWidget(self.selection_label)
-        self.render_button = QPushButton("生成案例封面")
-        self.render_button.setEnabled(False)
-        self.render_button.clicked.connect(self.render_cover)
+        self.render_button = QPushButton("生成当前模板")
+        self.render_button.clicked.connect(self.render_selected_template)
         panel_layout.addWidget(self.render_button)
+        self.render_all_button = QPushButton("一键生成全部 3 张")
+        self.render_all_button.clicked.connect(self.render_all_templates)
+        panel_layout.addWidget(self.render_all_button)
         self.export_status = QLabel("导出记录会保存在当前案例中。")
         self.export_status.setWordWrap(True)
         self.export_status.setObjectName("statusLabel")
@@ -322,8 +331,7 @@ class ImagePage(QWidget):
                 self.selected_asset = None
                 self.preview.clear()
                 self.preview.setText("选择“车辆外观”中的素材")
-                self.selection_label.setText("尚未选择素材")
-                self.render_button.setEnabled(False)
+                self.selection_label.setText("未选择时会自动使用车辆外观主图。")
             else:
                 self.selected_asset = asset
 
@@ -332,7 +340,6 @@ class ImagePage(QWidget):
         self.selection_label.setText(
             f"{asset['original_filename']} · {'主图' if asset.get('is_primary') else asset.get('status', '待整理')}"
         )
-        self.render_button.setEnabled(asset["category"] == "01 车辆外观")
         project_path = CurrentProject.get_project()
         image_path = os.path.join(project_path, asset["path"])
         pixmap = QPixmap(image_path)
@@ -340,19 +347,44 @@ class ImagePage(QWidget):
             self.preview.setText("无法预览图片")
             return
         self.preview.setPixmap(pixmap.scaled(250, 220, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-        self.export_status.setText("已选择素材；使用车辆外观图片可生成封面。")
+        self.export_status.setText("已选择素材；未选择车辆外观时系统将自动使用主图。")
 
-    def render_cover(self):
+    def render_selected_template(self):
         project_path = CurrentProject.get_project()
-        if not project_path or not self.selected_asset:
-            self.export_status.setText("请先选择车辆外观素材。")
+        if not project_path:
+            self.export_status.setText("请先打开案例。")
             return
-
-        result = ImageCaseRenderer(project_path).render("case_cover", self.selected_asset["id"])
+        asset_id = (
+            self.selected_asset["id"]
+            if self.selected_asset and self.selected_asset["category"] == "01 车辆外观"
+            else None
+        )
+        result = ImageCaseRenderer(project_path).render(
+            self.template_combo.currentData(),
+            asset_id,
+        )
         if result.success:
-            self.export_status.setText(f"封面已生成：{result.output_path}")
+            self.export_status.setText(f"模板已生成：{result.output_path}")
         else:
             self.export_status.setText(f"生成失败：{result.error}")
+
+    def render_all_templates(self):
+        project_path = CurrentProject.get_project()
+        if not project_path:
+            self.export_status.setText("请先打开案例。")
+            return
+        asset_id = (
+            self.selected_asset["id"]
+            if self.selected_asset and self.selected_asset["category"] == "01 车辆外观"
+            else None
+        )
+        results = ImageCaseRenderer(project_path).render_all(asset_id)
+        successful = [result for result in results if result.success]
+        failed = [result for result in results if not result.success]
+        if failed:
+            self.export_status.setText(f"已生成 {len(successful)} 张；失败：{failed[0].error}")
+        else:
+            self.export_status.setText(f"已生成 {len(successful)} 张发布图片。")
 
     def _selected_category(self):
         return self.selected_asset["category"] if self.selected_asset else None
