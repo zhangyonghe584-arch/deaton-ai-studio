@@ -1,83 +1,72 @@
-# Deaton AI Studio Development Rules
+# Deaton AI Studio AI Development Rules
 
-## Project Overview
 
-Deaton AI Studio is a local desktop application for Deaton Auto.
+## Project
 
-Purpose:
+Project Name:
 
-- Automotive case image production
-- Automotive case video production
-- AI assisted content planning
-- Local project management
+Deaton AI Studio
+
+
+## Purpose
+
+This is a professional Windows desktop software developed for Deaton Auto.
+
+The software is used for automotive remote programming case production.
 
 
 ## Development Rules
 
-1. Do not change the overall architecture without approval.
+- Read existing code before modification.
+- Do not randomly change project architecture.
+- Do not delete existing functions.
+- Keep modules independent.
+- Test after changes.
+- Maintain clean code structure.
 
-2. Keep modules separated.
 
-Structure:
+## Technology
+
+Language:
+
+Python
+
+
+Framework:
+
+PySide6
+
+
+Target:
+
+Windows Desktop Application
+
+
+## Architecture
+
+Keep separation:
 
 ui/
-    Interface pages
+User interface
 
 engine/
-    File processing and project management
+Business logic
 
 ai/
-    AI API related functions
+AI API functions
 
 templates/
-    Production templates
+Production templates
+
+resources/
+Static resources
 
 config/
-    Configuration files
-
-
-## Current Functions
-
-Image Case:
-
-- Six category image upload
-- Drag and drop support
-- Project based storage
-
-
-Categories:
-
-01 Vehicle
-02 Fault
-03 Diagnosis
-04 Programming
-05 Result
-06 Technical
-
-
-## Future Functions
-
-- Video production
-- AI analysis
-- AI image generation
-- Template management
-- Case database
-
-
-## Coding Requirements
-
-- Python
-- PySide6
-- Keep code readable
-- Avoid unnecessary rewrites
-- Do not delete existing functions
-- Test before modifying
+Configuration
 
 
 ## Important
 
-This is a commercial internal tool.
+This is not a demo project.
 
-Do not create a simple demo.
-
-All features should consider future expansion.
+The final goal is a real daily-use commercial internal tool.
