@@ -1,8 +1,9 @@
 import os
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
+    QComboBox,
     QFileDialog,
     QFrame,
     QGridLayout,
@@ -10,12 +11,13 @@ from PySide6.QtWidgets import (
     QLabel,
     QListWidget,
     QListWidgetItem,
+    QMessageBox,
     QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
-from engine.case_service import CaseService
+from engine.case_service import ASSET_STATUSES, CaseService
 from engine.current_project import CurrentProject
 from engine.image_manager import CATEGORY_MAP, ImageManager
 from engine.image_renderer import ImageCaseRenderer
@@ -28,9 +30,10 @@ class DropBox(QFrame):
     def __init__(self, category_name):
         super().__init__()
         self.category_name = category_name
+        self._refreshing = False
         self.setAcceptDrops(True)
         self.setObjectName("assetCard")
-        self.setMinimumHeight(230)
+        self.setMinimumHeight(330)
 
         layout = QVBoxLayout(self)
         self.title = QLabel(category_name)
@@ -38,22 +41,49 @@ class DropBox(QFrame):
         layout.addWidget(self.title)
 
         self.asset_list = QListWidget()
-        self.asset_list.setMaximumHeight(116)
+        self.asset_list.setIconSize(QSize(72, 54))
+        self.asset_list.setMinimumHeight(140)
         self.asset_list.itemSelectionChanged.connect(self._emit_selected_asset)
         layout.addWidget(self.asset_list)
 
-        button_layout = QHBoxLayout()
+        import_layout = QHBoxLayout()
         self.import_button = QPushButton("选择图片")
         self.import_button.clicked.connect(self.select_files)
-        button_layout.addWidget(self.import_button)
+        import_layout.addWidget(self.import_button)
         self.count_label = QLabel("0 张")
-        button_layout.addWidget(self.count_label)
-        button_layout.addStretch()
-        layout.addLayout(button_layout)
+        import_layout.addWidget(self.count_label)
+        import_layout.addStretch()
+        layout.addLayout(import_layout)
+
+        action_layout = QHBoxLayout()
+        self.move_up_button = QPushButton("上移")
+        self.move_down_button = QPushButton("下移")
+        self.primary_button = QPushButton("设为主图")
+        self.replace_button = QPushButton("替换")
+        self.delete_button = QPushButton("删除")
+        for button, callback in (
+            (self.move_up_button, self.move_selected_up),
+            (self.move_down_button, self.move_selected_down),
+            (self.primary_button, self.set_primary),
+            (self.replace_button, self.replace_selected),
+            (self.delete_button, self.delete_selected),
+        ):
+            button.clicked.connect(callback)
+            action_layout.addWidget(button)
+        layout.addLayout(action_layout)
+
+        status_layout = QHBoxLayout()
+        status_layout.addWidget(QLabel("状态"))
+        self.status_combo = QComboBox()
+        self.status_combo.addItems(ASSET_STATUSES)
+        self.status_combo.currentTextChanged.connect(self.change_status)
+        status_layout.addWidget(self.status_combo)
+        layout.addLayout(status_layout)
 
         self.status = QLabel("拖放图片到这里")
         self.status.setObjectName("statusLabel")
         layout.addWidget(self.status)
+        self._set_asset_actions_enabled(False)
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
@@ -100,25 +130,133 @@ class DropBox(QFrame):
             self.status.setText(f"已导入 {imported} 张图片")
         self.assets_changed.emit()
 
-    def refresh(self):
+    def refresh(self, selected_asset_id=None):
+        self._refreshing = True
         self.asset_list.clear()
         project_path = CurrentProject.get_project()
         self.import_button.setEnabled(bool(project_path))
         if not project_path:
             self.count_label.setText("0 张")
+            self._set_asset_actions_enabled(False)
+            self._refreshing = False
             return
 
         assets = CaseService(project_path).list_assets(self.category_name)
         for asset in assets:
             item = QListWidgetItem(asset["original_filename"])
             item.setData(Qt.UserRole, asset)
+            item.setToolTip(self._asset_tooltip(asset))
+            pixmap = QPixmap(os.path.join(project_path, asset["path"]))
+            if not pixmap.isNull():
+                item.setIcon(QIcon(pixmap.scaled(72, 54, Qt.KeepAspectRatio, Qt.SmoothTransformation)))
             self.asset_list.addItem(item)
+            if asset["id"] == selected_asset_id:
+                self.asset_list.setCurrentItem(item)
         self.count_label.setText(f"{len(assets)} 张")
+        self._refreshing = False
+        self._emit_selected_asset()
 
     def _emit_selected_asset(self):
+        selected = self.selected_asset()
+        self._set_asset_actions_enabled(selected is not None)
+        if selected is None:
+            return
+        self._refreshing = True
+        self.status_combo.setCurrentText(selected.get("status", ASSET_STATUSES[0]))
+        self._refreshing = False
+        self.asset_selected.emit(selected)
+
+    def selected_asset(self):
         selected = self.asset_list.selectedItems()
-        if selected:
-            self.asset_selected.emit(selected[0].data(Qt.UserRole))
+        return selected[0].data(Qt.UserRole) if selected else None
+
+    def move_selected_up(self):
+        self._move_selected(-1)
+
+    def move_selected_down(self):
+        self._move_selected(1)
+
+    def _move_selected(self, offset):
+        asset = self.selected_asset()
+        if asset is None:
+            return
+        assets = CaseService(CurrentProject.get_project()).list_assets(self.category_name)
+        asset_ids = [item["id"] for item in assets]
+        index = asset_ids.index(asset["id"])
+        target = index + offset
+        if target < 0 or target >= len(asset_ids):
+            return
+        asset_ids[index], asset_ids[target] = asset_ids[target], asset_ids[index]
+        CaseService(CurrentProject.get_project()).reorder_assets(self.category_name, asset_ids)
+        self.refresh(asset["id"])
+        self.assets_changed.emit()
+
+    def set_primary(self):
+        asset = self.selected_asset()
+        if asset is None:
+            return
+        CaseService(CurrentProject.get_project()).set_primary_asset(asset["id"])
+        self.refresh(asset["id"])
+        self.status.setText("已设为主图")
+        self.assets_changed.emit()
+
+    def change_status(self, status):
+        asset = self.selected_asset()
+        if self._refreshing or asset is None:
+            return
+        CaseService(CurrentProject.get_project()).set_asset_status(asset["id"], status)
+        self.refresh(asset["id"])
+        self.status.setText(f"素材状态已更新为：{status}")
+        self.assets_changed.emit()
+
+    def replace_selected(self):
+        asset = self.selected_asset()
+        if asset is None:
+            return
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "选择替换图片",
+            "",
+            "Images (*.jpg *.jpeg *.png *.webp *.bmp)",
+        )
+        if not path:
+            return
+        result = ImageManager(CurrentProject.get_project()).replace_image(asset["id"], path)
+        self.refresh(asset["id"])
+        self.status.setText("素材已替换" if result.success else f"替换失败：{result.error}")
+        self.assets_changed.emit()
+
+    def delete_selected(self):
+        asset = self.selected_asset()
+        if asset is None:
+            return
+        answer = QMessageBox.question(
+            self,
+            "删除素材",
+            f"确定删除“{asset['original_filename']}”吗？此操作会移除项目内的图片文件。",
+        )
+        if answer != QMessageBox.Yes:
+            return
+        deleted = ImageManager(CurrentProject.get_project()).delete_image(asset["id"])
+        self.refresh()
+        self.status.setText("素材已删除" if deleted else "删除素材失败")
+        self.assets_changed.emit()
+
+    def _set_asset_actions_enabled(self, enabled):
+        for button in (
+            self.move_up_button,
+            self.move_down_button,
+            self.primary_button,
+            self.replace_button,
+            self.delete_button,
+            self.status_combo,
+        ):
+            button.setEnabled(enabled)
+
+    @staticmethod
+    def _asset_tooltip(asset):
+        primary = "主图" if asset.get("is_primary") else "普通素材"
+        return f"{asset['original_filename']}\n{primary} · {asset.get('status', '待整理')}"
 
 
 class ImagePage(QWidget):
@@ -131,7 +269,7 @@ class ImagePage(QWidget):
         title = QLabel("图片案例制作")
         title.setObjectName("pageTitle")
         layout.addWidget(title)
-        layout.addWidget(QLabel("按分类导入案例素材，选择一张车辆外观图，即可生成固定版式案例封面。"))
+        layout.addWidget(QLabel("导入、整理和审核六类素材；选择车辆外观主图后即可生成案例封面。"))
 
         workspace = QHBoxLayout()
         grid = QGridLayout()
@@ -174,21 +312,26 @@ class ImagePage(QWidget):
         self.refresh()
 
     def refresh(self):
+        selected_id = self.selected_asset["id"] if self.selected_asset else None
         for box in self.boxes:
-            box.refresh()
+            box.refresh(selected_id if box.category_name == self._selected_category() else None)
         if self.selected_asset:
             project_path = CurrentProject.get_project()
-            asset = CaseService(project_path).get_asset(self.selected_asset["id"]) if project_path else None
+            asset = CaseService(project_path).get_asset(selected_id) if project_path else None
             if asset is None:
                 self.selected_asset = None
                 self.preview.clear()
                 self.preview.setText("选择“车辆外观”中的素材")
                 self.selection_label.setText("尚未选择素材")
                 self.render_button.setEnabled(False)
+            else:
+                self.selected_asset = asset
 
     def select_asset(self, asset):
         self.selected_asset = asset
-        self.selection_label.setText(asset["original_filename"])
+        self.selection_label.setText(
+            f"{asset['original_filename']} · {'主图' if asset.get('is_primary') else asset.get('status', '待整理')}"
+        )
         self.render_button.setEnabled(asset["category"] == "01 车辆外观")
         project_path = CurrentProject.get_project()
         image_path = os.path.join(project_path, asset["path"])
@@ -210,3 +353,6 @@ class ImagePage(QWidget):
             self.export_status.setText(f"封面已生成：{result.output_path}")
         else:
             self.export_status.setText(f"生成失败：{result.error}")
+
+    def _selected_category(self):
+        return self.selected_asset["category"] if self.selected_asset else None
