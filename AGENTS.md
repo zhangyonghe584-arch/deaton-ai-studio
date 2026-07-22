@@ -73,7 +73,8 @@ The final goal is a real daily-use commercial internal tool.
 
 ## Current MVP Contracts
 
-- `engine.case_service.CaseService` owns `project.json` metadata for case info, imported assets, and export history while preserving legacy fields.
-- `engine.image_manager.ImageManager.import_image()` keeps the existing six image categories and records imported files as assets; retain `save_image()` compatibility.
-- `engine.image_renderer.ImageCaseRenderer` is the template boundary. The current MVP supports only the fixed `case_cover` image export; do not add video or AI behavior here.
-- Verify the core workflow with: `python -m unittest -v test_project.py test_image_case_mvp.py`.
+- `engine.case_service.CaseService` owns `project.json` metadata for case info, imported assets, asset state/order/main-image selection, and export history while preserving legacy fields.
+- `engine.image_manager.ImageManager` keeps the existing six image categories and provides import, replacement, and removal; retain `save_image()` compatibility.
+- `engine.brand_service.BrandService` stores the reusable publication identity in `config/brand.json`; do not duplicate it as per-case data.
+- `engine.image_renderer.ImageCaseRenderer` is the fixed-template boundary. Current templates are `case_cover`, `diagnosis_summary`, and `result_card`; `render_all()` is the low-step publication workflow.
+- Verify the workflow with: `python -m unittest -v test_project.py test_image_case_mvp.py test_case_data_assets.py test_brand_templates.py`.
