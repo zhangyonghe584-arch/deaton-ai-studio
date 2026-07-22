@@ -23,67 +23,13 @@ class MainWindow(QMainWindow):
 
         super().__init__()
 
-
-        # 创建当前案例
-
         manager = ProjectManager()
 
         project_path = manager.create_new_case()
 
-
-        print(
-            "创建项目:",
-            project_path
-        )
-
-
         CurrentProject.set_project(
             project_path
         )
-
-
-        print(
-            "当前项目设置:",
-            CurrentProject.get_project()
-        )
-
-
-        self.setWindowTitle(
-            "Deaton AI Studio"
-        )
-
-
-        self.resize(
-            1400,
-            850
-        )
-
-
-        self.init_ui()
-
-        super().__init__()
-
-
-        # 创建当前案例
-
-        manager = ProjectManager()
-
-        project_path = manager.create_new_case()
-
-
-        CurrentProject.set_project(
-            project_path
-        )
-
-
-        print(
-            "当前项目:",
-            project_path
-        )
-
-    def __init__(self):
-
-        super().__init__()
 
         self.setWindowTitle(
             "Deaton AI Studio"
@@ -93,7 +39,6 @@ class MainWindow(QMainWindow):
             1400,
             850
         )
-
 
         self.init_ui()
 
@@ -174,9 +119,12 @@ class MainWindow(QMainWindow):
 
         self.pages = QStackedWidget()
 
+        self.image_page = ImagePage()
+        self.info_page = InfoPage()
+        self.info_page.case_saved.connect(self.image_page.refresh)
 
         self.pages.addWidget(
-            ImagePage()
+            self.image_page
         )
 
         self.pages.addWidget(
@@ -184,7 +132,7 @@ class MainWindow(QMainWindow):
         )
 
         self.pages.addWidget(
-            InfoPage()
+            self.info_page
         )
 
         self.pages.addWidget(
@@ -205,5 +153,5 @@ class MainWindow(QMainWindow):
             self.pages
         )
 
-
         main.setLayout(layout)
+        self.pages.setCurrentIndex(2)

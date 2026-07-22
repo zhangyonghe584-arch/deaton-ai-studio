@@ -1,5 +1,5 @@
-import os
 import json
+import os
 from datetime import datetime
 
 
@@ -14,7 +14,6 @@ class ProjectManager:
             os.makedirs(BASE_DIR)
 
 
-
     def create_project(self, name):
 
         date = datetime.now().strftime("%Y%m%d")
@@ -25,31 +24,23 @@ class ProjectManager:
             BASE_DIR,
             project_name
         )
-
-    def create_new_case(self):
-
-        return self.create_project(
-            "New_Case"
-        )    
-
+        suffix = 2
+        while os.path.exists(path):
+            path = os.path.join(BASE_DIR, f"{project_name}_{suffix}")
+            suffix += 1
+        project_name = os.path.basename(path)
 
         folders = [
-
             "images/01_vehicle",
             "images/02_fault",
             "images/03_diagnosis",
             "images/04_programming",
             "images/05_result",
             "images/06_technical",
-
             "videos",
-
             "ai",
-
             "output"
-
         ]
-
 
         for folder in folders:
 
@@ -58,38 +49,38 @@ class ProjectManager:
                 exist_ok=True
             )
 
-
         info = {
-
+            "schema_version": 1,
             "project_name": project_name,
-
             "created": datetime.now().isoformat(),
-
             "vehicle": "",
-
             "fault": "",
-
             "service": "",
-
             "images": {},
-
-            "videos": []
-
+            "videos": [],
+            "case_info": {},
+            "assets": [],
+            "exports": []
         }
 
-
         with open(
-            os.path.join(path,"project.json"),
+            os.path.join(path, "project.json"),
             "w",
             encoding="utf-8"
-        ) as f:
+        ) as file:
 
             json.dump(
                 info,
-                f,
+                file,
                 ensure_ascii=False,
                 indent=4
             )
 
-
         return path
+
+
+    def create_new_case(self):
+
+        return self.create_project(
+            "New_Case"
+        )
