@@ -11,7 +11,8 @@ DEFAULT_BRAND = {
     "primary_color": "#111D30",
     "accent_color": "#22D3EE",
     "logo": "",
-    "footer": "Worldwide Remote Programming"
+    "footer": "Worldwide Remote Programming",
+    "font": "Microsoft YaHei"
 }
 
 
@@ -20,18 +21,21 @@ class BrandService:
     Deaton Auto Brand Manager
 
     管理：
-    - brand.json
-    - Logo资源
-    - 品牌配置
+    - config/brand.json
+    - resources/branding/logo
     """
 
+    def __init__(self, base_path=None):
 
-    def __init__(self, base_path="."):
+        if base_path is None:
+            base_path = os.path.dirname(
+                os.path.dirname(__file__)
+            )
 
-        self.base_path = base_path
+        self.base_path = os.path.abspath(base_path)
 
         self.config_dir = os.path.join(
-            base_path,
+            self.base_path,
             "config"
         )
 
@@ -40,45 +44,33 @@ class BrandService:
             "brand.json"
         )
 
-
         self.logo_dir = os.path.join(
-            base_path,
+            self.base_path,
             "resources",
             "branding",
             "logo"
         )
-
 
         os.makedirs(
             self.config_dir,
             exist_ok=True
         )
 
-
         os.makedirs(
             self.logo_dir,
             exist_ok=True
         )
 
-
         self.initialize()
-
 
 
     def initialize(self):
 
-        """
-        第一次运行自动创建品牌配置
-        """
-
-        if not os.path.exists(
-            self.brand_file
-        ):
+        if not os.path.exists(self.brand_file):
 
             self.save_profile(
                 DEFAULT_BRAND
             )
-
 
 
     def load_profile(self):
@@ -86,7 +78,6 @@ class BrandService:
         if not os.path.exists(
             self.brand_file
         ):
-
             self.initialize()
 
 
@@ -96,31 +87,22 @@ class BrandService:
             encoding="utf-8"
         ) as f:
 
-            return json.load(f)
-
-
-
-    def save_profile(
-        self,
-        values
-    ):
+            data = json.load(f)
 
 
         profile = DEFAULT_BRAND.copy()
 
+        profile.update(data)
 
-        if os.path.exists(
-            self.brand_file
-        ):
-
-            profile.update(
-                self.load_profile()
-            )
+        return profile
 
 
-        profile.update(
-            values
-        )
+
+    def save_profile(self, values):
+
+        profile = self.load_profile()
+
+        profile.update(values)
 
 
         with open(
@@ -141,16 +123,11 @@ class BrandService:
 
 
 
-    def import_logo(
-        self,
-        logo_path
-    ):
+    def import_logo(self, logo_path):
 
-
-        if not os.path.exists(
+        if not os.path.isfile(
             logo_path
         ):
-
             return None
 
 
@@ -165,9 +142,7 @@ class BrandService:
             ".jpeg",
             ".svg"
         ]:
-
             return None
-
 
 
         filename = (
@@ -176,7 +151,7 @@ class BrandService:
             +
             "_"
             +
-            uuid.uuid4().hex[:6]
+            uuid.uuid4().hex[:8]
             +
             ext
         )
@@ -194,17 +169,16 @@ class BrandService:
         )
 
 
-        profile = self.load_profile()
-
-
-        profile["logo"] = os.path.relpath(
+        relative = os.path.relpath(
             target,
             self.base_path
         )
 
 
         self.save_profile(
-            profile
+            {
+                "logo": relative
+            }
         )
 
 
@@ -212,13 +186,34 @@ class BrandService:
 
 
 
-    def list_logos(self):
+    def get_logo_path(self):
 
+        brand = self.load_profile()
+
+        logo = brand.get(
+            "logo",
+            ""
+        )
+
+        if not logo:
+            return ""
+
+
+        return os.path.join(
+            self.base_path,
+            logo.replace(
+                "\\",
+                os.sep
+            )
+        )
+
+
+
+    def list_logos(self):
 
         if not os.path.exists(
             self.logo_dir
         ):
-
             return []
 
 

@@ -67,9 +67,13 @@ class ImageCaseRenderer:
         )
 
         self.brand_service = (
-            brand_service
-            or BrandService()
+    brand_service
+    or BrandService(
+        os.path.dirname(
+            os.path.dirname(__file__)
         )
+    )
+)
 
 
     def list_templates(self):
@@ -77,7 +81,6 @@ class ImageCaseRenderer:
         return list(
             TEMPLATES.values()
         )
-
 
 
     def render(
@@ -90,9 +93,7 @@ class ImageCaseRenderer:
             template_id
         )
 
-
         if not template:
-
             return RenderResult(
                 False,
                 error="模板不存在",
@@ -105,9 +106,7 @@ class ImageCaseRenderer:
             template["required_category"]
         )
 
-
         if not asset:
-
             return RenderResult(
                 False,
                 error="没有可用素材",
@@ -121,9 +120,7 @@ class ImageCaseRenderer:
         )
 
 
-        if not os.path.exists(
-            source_path
-        ):
+        if not os.path.exists(source_path):
 
             return RenderResult(
                 False,
@@ -156,6 +153,7 @@ class ImageCaseRenderer:
             "images"
         )
 
+
         os.makedirs(
             output_dir,
             exist_ok=True
@@ -168,6 +166,8 @@ class ImageCaseRenderer:
             + datetime.now().strftime(
                 "%Y%m%d_%H%M%S"
             )
+            + "_"
+            + uuid.uuid4().hex[:8]
             + ".jpg"
         )
 
@@ -185,6 +185,16 @@ class ImageCaseRenderer:
         )
 
 
+        brand_snapshot = {
+            "name": brand.get("name",""),
+            "subtitle": brand.get("subtitle",""),
+            "primary_color": brand.get("primary_color",""),
+            "accent_color": brand.get("accent_color",""),
+            "logo": brand.get("logo",""),
+            "footer": brand.get("footer","")
+        }
+
+
         self.case_service.record_export(
             {
                 "id": uuid.uuid4().hex,
@@ -194,7 +204,7 @@ class ImageCaseRenderer:
                     output_path,
                     self.project_path
                 ),
-                "brand": brand.copy(),
+                "brand": brand_snapshot,
                 "created": datetime.now().isoformat()
             }
         )
@@ -484,8 +494,6 @@ class ImageCaseRenderer:
 
         return canvas
 
-
-
     def _draw_logo(self, canvas, brand):
 
         logo_path = brand.get("logo", "")
@@ -494,20 +502,22 @@ class ImageCaseRenderer:
             return
 
 
-        # 转换相对路径
         if not os.path.isabs(logo_path):
 
             logo_path = os.path.join(
                 os.path.dirname(
                     os.path.dirname(__file__)
                 ),
-                logo_path
+                logo_path.replace("\\", os.sep)
             )
 
 
         if not os.path.exists(logo_path):
 
-            print("Logo不存在:", logo_path)
+            print(
+                "Logo不存在:",
+                logo_path
+            )
 
             return
 
@@ -516,80 +526,35 @@ class ImageCaseRenderer:
 
             logo = Image.open(
                 logo_path
-            ).convert("RGBA")
-
-
-            logo.thumbnail(
-                (220,120)
-            )
-
-
-            canvas.paste(
-                logo,
-                (800,40),
-                logo
-            )
-
-
-            print(
-                "Logo加载成功:",
-                logo_path
-            )
-
-
-        except Exception as e:
-
-            print(
-                "Logo读取失败:",
-                e
-            )
-
-
-        logo = brand.get(
-            "logo"
-        )
-
-
-        if not logo:
-            return
-
-
-        logo_path = os.path.join(
-            os.getcwd(),
-            logo
-        )
-
-
-        if not os.path.exists(
-            logo_path
-        ):
-            return
-
-
-        try:
-
-            img = Image.open(
-                logo_path
             ).convert(
                 "RGBA"
             )
 
 
-            img.thumbnail(
-                (220,120)
+            logo.thumbnail(
+                (260,140)
             )
 
 
             canvas.paste(
-                img,
-                (800,40),
-                img
+                logo,
+                (760,40),
+                logo
             )
 
 
-        except Exception:
+            print(
+                "Logo显示成功:",
+                logo_path
+            )
 
-            pass
+
+        except Exception as error:
+
+            print(
+                "Logo错误:",
+                error
+            )
 
 
 
