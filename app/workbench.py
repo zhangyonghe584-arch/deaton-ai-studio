@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
     QComboBox,
+    QCompleter,
     QFileDialog,
     QFormLayout,
     QFrame,
@@ -188,13 +189,24 @@ class WorkbenchPage(QWidget):
         form = QFormLayout(card)
         form.setContentsMargins(28, 28, 28, 28)
         options = self.store.options()
+        self.brand_options = options.get("brand", [])
+        self.models_by_brand = options.get("models_by_brand", {})
         for key, label in CASE_FIELDS:
             combo = QComboBox(editable=True)
+            combo.setInsertPolicy(QComboBox.NoInsert)
+            combo.setMaxVisibleItems(15)
             combo.addItems(options.get(key, []))
+            completer = QCompleter(combo.model(), combo)
+            completer.setCaseSensitivity(Qt.CaseInsensitive)
+            completer.setFilterMode(Qt.MatchContains)
+            completer.setCompletionMode(QCompleter.PopupCompletion)
+            combo.setCompleter(completer)
             combo.setCurrentText("")
             combo.editTextChanged.connect(self._save_information)
             self.fields[key] = combo
             form.addRow(f"{label}", combo)
+        self.fields["brand"].currentTextChanged.connect(self._update_model_options)
+        self._update_model_options(self.fields["brand"].currentText())
         layout.addWidget(note)
         layout.addSpacing(8)
         layout.addWidget(card)
@@ -253,6 +265,23 @@ class WorkbenchPage(QWidget):
         layout.addLayout(actions)
         layout.addWidget(scroll, 1)
         return page
+
+    def _update_model_options(self, brand: str):
+        model_combo = self.fields.get("model")
+        if not model_combo:
+            return
+        current = model_combo.currentText()
+        models = self.models_by_brand.get(brand, [])
+        model_combo.blockSignals(True)
+        model_combo.clear()
+        model_combo.addItems(models)
+        model_combo.setCurrentText(current if current in models else "")
+        model_combo.blockSignals(False)
+        completer = QCompleter(model_combo.model(), model_combo)
+        completer.setCaseSensitivity(Qt.CaseInsensitive)
+        completer.setFilterMode(Qt.MatchContains)
+        completer.setCompletionMode(QCompleter.PopupCompletion)
+        model_combo.setCompleter(completer)
 
     def _load_manifest(self):
         self.manifest = self.store.load(self.case_dir)
