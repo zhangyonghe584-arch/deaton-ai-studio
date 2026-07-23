@@ -77,4 +77,6 @@ The final goal is a real daily-use commercial internal tool.
 - `engine.image_manager.ImageManager` keeps the existing six image categories and provides import, replacement, and removal; retain `save_image()` compatibility.
 - `engine.brand_service.BrandService` stores the reusable publication identity in `config/brand.json`; do not duplicate it as per-case data.
 - `engine.image_renderer.ImageCaseRenderer` is the fixed-template boundary. Current templates are `case_cover`, `diagnosis_summary`, and `result_card`; `render_all()` is the low-step publication workflow.
-- Verify the workflow with: `python -m unittest -v test_project.py test_image_case_mvp.py test_case_data_assets.py test_brand_templates.py`.
+- `engine.case_option_service.CaseOptionService` loads editable dropdown suggestions from `config/options/*.txt`; one non-comment line equals one option. Do not store option catalogs in `project.json`.
+- `ui.video_page.VideoPage` reserves the future video production workspace only. Do not add import, timeline, render, or export behavior until a video-production phase is approved.
+- Verify the workflow with: `python -m unittest -v test_project.py test_image_case_mvp.py test_case_data_assets.py test_brand_templates.py test_case_options.py`.

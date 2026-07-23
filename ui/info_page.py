@@ -1,7 +1,12 @@
-from PySide6.QtCore import Signal
+import os
+
+from PySide6.QtCore import QUrl, Signal
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
+    QComboBox,
     QFormLayout,
     QGroupBox,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
@@ -10,6 +15,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from engine.case_option_service import OPTION_FIELDS, CaseOptionService
 from engine.case_service import CaseService
 from engine.current_project import CurrentProject
 
@@ -51,6 +57,7 @@ class InfoPage(QWidget):
     def __init__(self):
         super().__init__()
         self.fields = {}
+        self.option_service = CaseOptionService()
 
         layout = QVBoxLayout(self)
         title = QLabel("案例资料")
@@ -58,14 +65,21 @@ class InfoPage(QWidget):
         layout.addWidget(title)
         layout.addWidget(QLabel("案例信息会持续保存至当前案例的 project.json。"))
 
+        option_layout = QHBoxLayout()
+        option_layout.addWidget(QLabel("下拉选项可在 config/options 中按每行一个值维护。"))
+        self.open_options_button = QPushButton("打开选项目录")
+        self.open_options_button.clicked.connect(self.open_options_directory)
+        option_layout.addWidget(self.open_options_button)
+        option_layout.addStretch()
+        layout.addLayout(option_layout)
+
         for section_title, fields in FIELD_SECTIONS:
             group = QGroupBox(section_title)
             form = QFormLayout(group)
             for field, label in fields:
-                line_edit = QLineEdit()
-                line_edit.setPlaceholderText(label)
-                self.fields[field] = line_edit
-                form.addRow(label, line_edit)
+                widget = self.create_field_widget(field, label)
+                self.fields[field] = widget
+                form.addRow(label, widget)
             layout.addWidget(group)
 
         notes_group = QGroupBox("技术备注")
@@ -85,6 +99,19 @@ class InfoPage(QWidget):
         layout.addWidget(self.status)
         layout.addStretch()
         self.refresh()
+
+    def create_field_widget(self, field, label):
+        if field in OPTION_FIELDS:
+            combo_box = QComboBox()
+            combo_box.setEditable(True)
+            combo_box.setInsertPolicy(QComboBox.NoInsert)
+            combo_box.addItems(self.option_service.list_options(field))
+            combo_box.setPlaceholderText(label)
+            return combo_box
+
+        line_edit = QLineEdit()
+        line_edit.setPlaceholderText(label)
+        return line_edit
 
     def refresh(self):
         project_path = CurrentProject.get_project()
@@ -113,13 +140,25 @@ class InfoPage(QWidget):
         self.status.setText("已保存到当前案例。")
         self.case_saved.emit()
 
+    def open_options_directory(self):
+        directory = self.option_service.options_directory_path()
+        os.makedirs(directory, exist_ok=True)
+        QDesktopServices.openUrl(QUrl.fromLocalFile(directory))
+        self.status.setText(f"选项目录：{directory}")
+
     @staticmethod
     def _field_value(widget):
-        return widget.toPlainText() if isinstance(widget, QTextEdit) else widget.text()
+        if isinstance(widget, QTextEdit):
+            return widget.toPlainText()
+        if isinstance(widget, QComboBox):
+            return widget.currentText()
+        return widget.text()
 
     @staticmethod
     def _set_field_value(widget, value):
         if isinstance(widget, QTextEdit):
             widget.setPlainText(value)
+        elif isinstance(widget, QComboBox):
+            widget.setEditText(value)
         else:
             widget.setText(value)
