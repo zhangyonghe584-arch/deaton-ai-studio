@@ -32,6 +32,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.ai_plan import OpenAIPlanService
+from core.ai_memory import ProjectMemory
 from core.case_store import CaseStore
 from core.constants import CASE_FIELDS, SLOT_SPECS
 from core.generation import LocalGenerationService
@@ -240,20 +241,21 @@ class WorkbenchPage(QWidget):
     def _ai_page(self):
         page = QWidget()
         layout = QVBoxLayout(page)
-        warning = QLabel("仅在点击“分析所选素材”时调用 OpenAI。最多 3 张由你勾选的图片会被压缩后上传；不会扫描全部素材。")
+        warning = QLabel("仅在点击时调用 OpenAI：已有 1–5 张案例图都可以分析，Logo 会一并作为参考，并自动带入本机项目记忆。AI方案会保存到本地，再由代码执行生成 5 张成品。")
         warning.setObjectName("subtitle")
         layout.addWidget(warning)
         selector = QFrame(objectName="panel")
         selector_layout = QVBoxLayout(selector)
         selector_layout.setContentsMargins(20, 20, 20, 20)
-        selector_layout.addWidget(QLabel("选择用于分析的素材（最多 3 张）"))
+        selector_layout.addWidget(QLabel("勾选已有的案例图片（至少 1 张，最多 5 张；Logo 会自动一并发送）"))
         self.ai_checks: dict[str, QCheckBox] = {}
         for key, label in SLOT_SPECS:
             if key != "logo":
                 check = QCheckBox(label)
+                check.setChecked(True)
                 self.ai_checks[key] = check
                 selector_layout.addWidget(check)
-        self.analyze_button = QPushButton("分析所选素材")
+        self.analyze_button = QPushButton("分析所选图片和Logo，生成方案")
         self.analyze_button.clicked.connect(self._analyze)
         selector_layout.addWidget(self.analyze_button)
         self.plan_editor = QPlainTextEdit(placeholderText="分析方案会显示在这里。你可以自行修改，再确认用于本地生成。")
@@ -353,8 +355,8 @@ class WorkbenchPage(QWidget):
     def _analyze(self):
         selected = [self.store.asset_path(self.case_dir, key) for key, check in self.ai_checks.items() if check.isChecked()]
         selected = [path for path in selected if path]
-        if len(selected) > OpenAIPlanService.max_images:
-            QMessageBox.warning(self, "最多三张图片", "请只选择最多三张素材进行分析。")
+        if not selected:
+            QMessageBox.warning(self, "缺少案例图片", "至少选择 1 张案例图片后才能进行 AI 分析。")
             return
         self._save_information()
         self.analyze_button.setEnabled(False)
@@ -362,10 +364,13 @@ class WorkbenchPage(QWidget):
             settings = QSettings("Deaton Auto", "Image Case Studio")
             api_key = settings.value("openai/api_key", "", str).strip()
             model = settings.value("openai/model", "gpt-4.1-mini", str).strip()
+            memory = ProjectMemory(self.store.projects_dir)
             plan = OpenAIPlanService(api_key=api_key or None, model=model or None).analyze(
-                self.store.load(self.case_dir)["information"], selected
+                self.store.load(self.case_dir)["information"], selected,
+                self.store.asset_path(self.case_dir, "logo"), memory.context()
             )
             self.plan_editor.setPlainText(plan)
+            memory.record(f"AI方案已生成：本次使用 {len(selected)} 张案例图和 Logo；最终仍生成五张图，要求三种不同构图、Logo纯净区、无步骤编号、原图居中不裁切。")
             self.confirm_plan.setChecked(False)
         except Exception as error:
             QMessageBox.warning(self, "AI 分析未完成", str(error))
@@ -375,6 +380,10 @@ class WorkbenchPage(QWidget):
     def _generate(self):
         self._save_information()
         self._plan_changed()
+        manifest = self.store.load(self.case_dir)
+        if not manifest["ai_plan"].get("content", "").strip() or not manifest["ai_plan"].get("confirmed", False):
+            QMessageBox.warning(self, "请先确认 AI 方案", "请先完成 AI 分析（或填写方案）并勾选“确认使用这份方案进行生成”。方案会先保存到本地，再由代码生成图片。")
+            return
         self.generate_button.setEnabled(False)
         try:
             self.generator.generate(self.case_dir)

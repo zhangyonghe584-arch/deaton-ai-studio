@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,6 +14,19 @@ PAPER = "#F6F3ED"
 MIST = "#E7E8E8"
 ORANGE = "#D86F2A"
 BLUE = "#123B68"
+CJK = re.compile(r"[\u3400-\u9fff\uf900-\ufaff]")
+
+
+def english(value, fallback="CASE UPDATE"):
+    """Return safe English copy for generated images.
+
+    Case files may be completed in Chinese. The UI can remain bilingual, but
+    published artwork must never receive raw non-English case text.
+    """
+    value = str(value or "").strip()
+    if not value or CJK.search(value):
+        return fallback
+    return value
 
 
 def font(size: int, bold: bool = False):
@@ -49,7 +63,7 @@ def logo_image(path: str) -> Image.Image | None:
 
 
 def text(draw: ImageDraw.ImageDraw, position, value: str, size: int, color=INK, bold=False, anchor=None):
-    draw.text(position, value.upper() or "—", font=font(size, bold), fill=color, anchor=anchor)
+    draw.text(position, english(value).upper(), font=font(size, bold), fill=color, anchor=anchor)
 
 
 def header(canvas: Image.Image, logo: Image.Image | None, page: str, index: int):
@@ -58,9 +72,8 @@ def header(canvas: Image.Image, logo: Image.Image | None, page: str, index: int)
     draw.rectangle((0, 154, W, 160), fill=ORANGE)
     if logo:
         canvas.alpha_composite(logo, (62, 30))
-    else:
-        text(draw, (64, 58), "DEATON AUTO", 32, BLUE, True)
-    text(draw, (1016, 62), f"{index:02d} / 05", 20, BLUE, True, "ra")
+    # The top-left area is reserved for the supplied logo only.
+    text(draw, (1016, 62), f"CASE {index:02d} / 05", 20, BLUE, True, "ra")
     text(draw, (1016, 96), page, 15, "#697176", True, "ra")
 
 
@@ -79,13 +92,13 @@ def cover(data, assets, logo):
     header(canvas, logo, "CASE OVERVIEW", 1)
     draw = ImageDraw.Draw(canvas)
     text(draw, (64, 1045), "REMOTE PROGRAMMING CASE", 20, "#DDE8F3", True)
-    text(draw, (64, 1100), data.get("brand", ""), 36, PAPER, True)
-    text(draw, (60, 1155), data.get("model", ""), 78, PAPER, True)
+    text(draw, (64, 1100), english(data.get("brand"), "VEHICLE"), 36, PAPER, True)
+    text(draw, (60, 1155), english(data.get("model"), "REMOTE SERVICE"), 78, PAPER, True)
     draw.rectangle((64, 1280, 510, 1287), fill=ORANGE)
-    text(draw, (64, 1320), data.get("service", ""), 34, PAPER, True)
-    text(draw, (64, 1382), f"{data.get('year', '')} · {data.get('fault_category', '')}", 23, "#DDE8F3")
+    text(draw, (64, 1320), english(data.get("service"), "REMOTE PROGRAMMING"), 34, PAPER, True)
+    text(draw, (64, 1382), f"{english(data.get('year'), 'VEHICLE')} · {english(data.get('fault_category'), 'TECHNICAL CASE')}", 23, "#DDE8F3")
     text(draw, (64, 1570), "RESULT", 17, "#B3C9DC", True)
-    text(draw, (64, 1612), data.get("result", ""), 32, PAPER, True)
+    text(draw, (64, 1612), english(data.get("result"), "SERVICE COMPLETED"), 32, PAPER, True)
     return canvas
 
 
@@ -99,13 +112,13 @@ def detail_page(data, assets, logo, slot, title, section, index):
     text(draw, (64, 1030), title, 56, BLUE, True)
     draw.line((64, 1115, 1016, 1115), fill=ORANGE, width=5)
     if slot == "fault":
-        values = [data.get("fault_category", ""), data.get("model", ""), data.get("year", "")]
+        values = [english(data.get("fault_category"), "REPORTED ISSUE"), english(data.get("model"), "VEHICLE"), english(data.get("year"), "CASE REVIEW")]
     elif slot == "diagnosis":
-        values = ["Technical assessment", data.get("fault_category", ""), "Verify before programming"]
+        values = ["Technical assessment", english(data.get("fault_category"), "SYSTEM FAULT"), "Verify before programming"]
     elif slot == "programming":
-        values = [data.get("programming", ""), data.get("service", ""), "Controlled remote procedure"]
+        values = [english(data.get("programming"), "MODULE CODING"), english(data.get("service"), "REMOTE PROGRAMMING"), "Controlled remote procedure"]
     else:
-        values = [data.get("result", ""), "Function verified", "Case completed"]
+        values = [english(data.get("result"), "SERVICE COMPLETED"), "Function verified", "Case completed"]
     y = 1195
     for number, value in enumerate(values, 1):
         text(draw, (70, y), f"0{number}", 20, ORANGE, True)
