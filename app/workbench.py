@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QPoint, Qt, Signal
+from PySide6.QtCore import QPoint, Qt, Signal, QSettings
 from PySide6.QtCore import QStringListModel
 from PySide6.QtGui import QColor, QDragEnterEvent, QDropEvent, QPainter, QPixmap, QPolygon
 from PySide6.QtWidgets import (
@@ -21,6 +21,9 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QPlainTextEdit,
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
     QScrollArea,
     QSizePolicy,
     QStackedWidget,
@@ -218,12 +221,9 @@ class WorkbenchPage(QWidget):
             if key != "model":
                 combo.addItems(options.get(key, []))
             combo.setInsertPolicy(QComboBox.NoInsert)
-            combo.setMaxVisibleItems(14)
-            combo.setPlaceholderText("请选择或输入 / Select or type")
             completer = QCompleter(combo.model(), combo)
             completer.setCaseSensitivity(Qt.CaseInsensitive)
             completer.setFilterMode(Qt.MatchContains)
-            completer.setCompletionMode(QCompleter.PopupCompletion)
             combo.setCompleter(completer)
             combo.setCurrentText("")
             combo.editTextChanged.connect(self._save_information)
@@ -270,7 +270,7 @@ class WorkbenchPage(QWidget):
     def _generation_page(self):
         page = QWidget()
         layout = QVBoxLayout(page)
-        note = QLabel("生成使用本机 Pillow 脚本，最终输出三套固定模板，共15张图片（每套5张）。前两张适配竖图，后三张适配横图。")
+        note = QLabel("生成使用本机 Pillow 脚本，最终输出 5 张 1080×1920 图片。")
         note.setObjectName("subtitle")
         self.save_path_label = QLabel()
         self.save_path_label.setObjectName("subtitle")
@@ -359,7 +359,12 @@ class WorkbenchPage(QWidget):
         self._save_information()
         self.analyze_button.setEnabled(False)
         try:
-            plan = OpenAIPlanService().analyze(self.store.load(self.case_dir)["information"], selected)
+            settings = QSettings("Deaton Auto", "Image Case Studio")
+            api_key = settings.value("openai/api_key", "", str).strip()
+            model = settings.value("openai/model", "gpt-4.1-mini", str).strip()
+            plan = OpenAIPlanService(api_key=api_key or None, model=model or None).analyze(
+                self.store.load(self.case_dir)["information"], selected
+            )
             self.plan_editor.setPlainText(plan)
             self.confirm_plan.setChecked(False)
         except Exception as error:
@@ -392,9 +397,9 @@ class WorkbenchPage(QWidget):
         for index, path in enumerate(paths):
             if path.is_file():
                 label = QLabel()
-                label.setPixmap(QPixmap(str(path)).scaledToWidth(170, Qt.SmoothTransformation))
+                label.setPixmap(QPixmap(str(path)).scaledToWidth(210, Qt.SmoothTransformation))
                 label.setToolTip(path.name)
-                self.preview_layout.addWidget(label, index // 5, index % 5)
+                self.preview_layout.addWidget(label, index // 3, index % 3)
 
     def _save_output(self):
         destination = self.manifest.get("generation", {}).get("save_path", "")
@@ -424,8 +429,51 @@ class ApplicationWindow(QMainWindow):
         self.setStyleSheet(STYLE)
         self.open_case(self.store.create("新案例"))
 
+    def open_api_settings(self):
+        settings = QSettings("Deaton Auto", "Image Case Studio")
+        dialog = QDialog(self)
+        dialog.setWindowTitle("OpenAI API 配置")
+        dialog.setMinimumWidth(520)
+        layout = QVBoxLayout(dialog)
+        note = QLabel("API Key 仅保存在本机应用设置中，不会写入案例文件或提交到 GitHub。")
+        note.setWordWrap(True)
+        note.setObjectName("subtitle")
+        layout.addWidget(note)
+        form = QFormLayout()
+        key_edit = QLineEdit()
+        key_edit.setEchoMode(QLineEdit.Password)
+        key_edit.setPlaceholderText("sk-...")
+        key_edit.setText(settings.value("openai/api_key", "", str))
+        model_edit = QLineEdit(settings.value("openai/model", "gpt-4.1-mini", str))
+        model_edit.setPlaceholderText("gpt-4.1-mini")
+        form.addRow("OpenAI API Key", key_edit)
+        form.addRow("模型", model_edit)
+        layout.addLayout(form)
+        status = QLabel()
+        status.setObjectName("subtitle")
+        def update_status():
+            status.setText("当前状态：已配置" if key_edit.text().strip() else "当前状态：未配置")
+        key_edit.textChanged.connect(update_status)
+        update_status()
+        layout.addWidget(status)
+        buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        clear_button = buttons.addButton("清除 Key", QDialogButtonBox.DestructiveRole)
+        clear_button.clicked.connect(lambda: key_edit.clear())
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        if dialog.exec() == QDialog.Accepted:
+            settings.setValue("openai/api_key", key_edit.text().strip())
+            settings.setValue("openai/model", model_edit.text().strip() or "gpt-4.1-mini")
+            QMessageBox.information(self, "已保存", "OpenAI API 配置已保存到本机。")
+
     def open_case(self, case_dir: Path):
         try:
-            self.setCentralWidget(WorkbenchPage(self.store, case_dir))
+            page = WorkbenchPage(self.store, case_dir)
+            self.setCentralWidget(page)
+            api_button = QPushButton("API 配置")
+            api_button.setObjectName("secondary")
+            api_button.clicked.connect(self.open_api_settings)
+            page.findChild(QFrame, "panel").layout().addWidget(api_button)
         except (FileNotFoundError, ValueError) as error:
             QMessageBox.warning(self, "无法打开案例", str(error))

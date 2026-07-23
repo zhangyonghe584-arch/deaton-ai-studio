@@ -8,11 +8,11 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 W, H = 1080, 1920
-PAPER = "#F6F3ED"
 INK = "#1E2329"
-BLUE = "#123B68"
-ORANGE = "#D86F2A"
+PAPER = "#F6F3ED"
 MIST = "#E7E8E8"
+ORANGE = "#D86F2A"
+BLUE = "#123B68"
 
 
 def font(size: int, bold: bool = False):
@@ -27,109 +27,92 @@ def font(size: int, bold: bool = False):
     return ImageFont.load_default()
 
 
-def fit(path: str, size: tuple[int, int], label: str, centering=(0.5, 0.5)):
+def open_image(path: str, size: tuple[int, int], label: str) -> Image.Image:
     if path and Path(path).is_file():
-        with Image.open(path) as source:
-            image = ImageOps.exif_transpose(source).convert("RGB")
-            return ImageOps.fit(image, size, Image.Resampling.LANCZOS, centering=centering)
+        with Image.open(path) as image:
+            image = ImageOps.exif_transpose(image).convert("RGB")
+            return ImageOps.fit(image, size, Image.Resampling.LANCZOS, centering=(0.5, 0.42))
     image = Image.new("RGB", size, MIST)
     draw = ImageDraw.Draw(image)
-    draw.rectangle((12, 12, size[0] - 12, size[1] - 12), outline="#B8BCBD", width=4)
-    draw.text((size[0] // 2, size[1] // 2), label.upper(), font=font(24, True), fill="#7F868A", anchor="mm")
+    draw.rectangle((14, 14, size[0] - 14, size[1] - 14), outline="#B8BCBD", width=4)
+    draw.text((size[0] // 2, size[1] // 2), label.upper(), font=font(25, True), fill="#7F868A", anchor="mm")
     return image
 
 
-def logo(path: str):
+def logo_image(path: str) -> Image.Image | None:
     if not path or not Path(path).is_file():
         return None
-    with Image.open(path) as source:
-        image = ImageOps.exif_transpose(source).convert("RGBA")
-        image.thumbnail((210, 92), Image.Resampling.LANCZOS)
-        return image
+    with Image.open(path) as image:
+        result = ImageOps.exif_transpose(image).convert("RGBA")
+        result.thumbnail((240, 110), Image.Resampling.LANCZOS)
+        return result
 
 
-def txt(draw, xy, value, size, color=INK, bold=False, anchor=None):
-    draw.text(xy, (value or "—").upper(), font=font(size, bold), fill=color, anchor=anchor)
+def text(draw: ImageDraw.ImageDraw, position, value: str, size: int, color=INK, bold=False, anchor=None):
+    draw.text(position, value.upper() or "—", font=font(size, bold), fill=color, anchor=anchor)
 
 
-def frame(data, assets, logo_img, slot, title, section, index, style):
-    canvas = Image.new("RGB", (W, H), PAPER)
+def header(canvas: Image.Image, logo: Image.Image | None, page: str, index: int):
     draw = ImageDraw.Draw(canvas)
-    accent = [ORANGE, BLUE, "#6C7C56"][style]
-    if style == 0:
-        draw.rectangle((0, 0, W, 145), fill=BLUE)
-        txt(draw, (62, 50), "DEATON AUTO", 28, PAPER, True)
-        txt(draw, (1018, 52), f"{index:02d} / 05", 18, PAPER, True, "ra")
-    elif style == 1:
-        draw.rectangle((0, 0, W, 12), fill=accent)
-        txt(draw, (64, 64), f"DEATON AUTO  /  {section}", 19, BLUE, True)
-        txt(draw, (1018, 64), f"{index:02d}", 22, accent, True, "ra")
+    draw.rectangle((0, 0, W, 160), fill=PAPER)
+    draw.rectangle((0, 154, W, 160), fill=ORANGE)
+    if logo:
+        canvas.alpha_composite(logo, (62, 30))
     else:
-        draw.rectangle((0, 0, W, 155), fill="#FFFFFF")
-        draw.line((64, 145, 1016, 145), fill=accent, width=5)
-        txt(draw, (64, 54), "DEATON AUTO", 28, BLUE, True)
-        txt(draw, (1018, 56), f"CASE {index:02d}", 17, "#697176", True, "ra")
-    if logo_img:
-        canvas.paste(logo_img, (62, 24 if style != 1 else 24), logo_img)
-    if slot == "fault":
-        photo_size = (690, 920)
-        photo_position = (195, 190 if style != 2 else 205)
-        y = 1190 if style != 2 else 1215
-    else:
-        photo_size = (952, 690)
-        photo_position = (64, 205 if style != 2 else 220)
-        y = 965 if style != 2 else 990
-    photo = fit(assets.get(slot, ""), photo_size, section, (0.5, 0.42))
-    canvas.paste(photo, photo_position)
-    txt(draw, (64, y), section, 17, accent, True)
-    txt(draw, (64, y + 55), title, 52 if style != 1 else 46, BLUE, True)
-    draw.line((64, y + 135, 1016, y + 135), fill=accent, width=5)
-    values = {
-        "fault": [data.get("fault_category", ""), data.get("model", ""), data.get("year", "")],
-        "diagnosis": ["Technical assessment", data.get("fault_category", ""), "Verify before programming"],
-        "programming": [data.get("programming", ""), data.get("service", ""), "Controlled remote procedure"],
-        "result": [data.get("result", ""), "Function verified", "Case completed"],
-    }.get(slot, [data.get("service", ""), data.get("region", ""), data.get("result", "")])
-    for number, value in enumerate(values, 1):
-        yy = y + 215 + (number - 1) * 126
-        txt(draw, (70, yy), f"0{number}", 19, accent, True)
-        txt(draw, (150, yy), value, 28 if style != 1 else 25, INK, True)
-        draw.line((64, yy + 55, 1016, yy + 55), fill="#D4D7D6", width=2)
-    txt(draw, (64, 1850), "DEATON AUTO · REMOTE PROGRAMMING", 15, "#697176", True)
+        text(draw, (64, 58), "DEATON AUTO", 32, BLUE, True)
+    text(draw, (1016, 62), f"{index:02d} / 05", 20, BLUE, True, "ra")
+    text(draw, (1016, 96), page, 15, "#697176", True, "ra")
+
+
+def footer(canvas: Image.Image):
+    draw = ImageDraw.Draw(canvas)
+    draw.line((64, 1816, 1016, 1816), fill="#C8CCCD", width=2)
+    text(draw, (64, 1850), "DEATON AUTO · REMOTE PROGRAMMING", 16, "#697176", True)
+
+
+def cover(data, assets, logo):
+    photo = open_image(assets.get("vehicle", ""), (W, H), "Vehicle image").convert("RGBA")
+    shade = Image.new("RGBA", (W, H), (10, 22, 36, 0))
+    shade_draw = ImageDraw.Draw(shade)
+    shade_draw.rectangle((0, 920, W, H), fill=(9, 23, 38, 220))
+    canvas = Image.alpha_composite(photo, shade)
+    header(canvas, logo, "CASE OVERVIEW", 1)
+    draw = ImageDraw.Draw(canvas)
+    text(draw, (64, 1045), "REMOTE PROGRAMMING CASE", 20, "#DDE8F3", True)
+    text(draw, (64, 1100), data.get("brand", ""), 36, PAPER, True)
+    text(draw, (60, 1155), data.get("model", ""), 78, PAPER, True)
+    draw.rectangle((64, 1280, 510, 1287), fill=ORANGE)
+    text(draw, (64, 1320), data.get("service", ""), 34, PAPER, True)
+    text(draw, (64, 1382), f"{data.get('year', '')} · {data.get('fault_category', '')}", 23, "#DDE8F3")
+    text(draw, (64, 1570), "RESULT", 17, "#B3C9DC", True)
+    text(draw, (64, 1612), data.get("result", ""), 32, PAPER, True)
     return canvas
 
 
-def cover(data, assets, logo_img, style):
-    accent = [ORANGE, BLUE, "#6C7C56"][style]
-    photo = fit(assets.get("vehicle", ""), (W, H), "Vehicle image", (0.5, 0.42))
-    canvas = photo.copy()
+def detail_page(data, assets, logo, slot, title, section, index):
+    canvas = Image.new("RGBA", (W, H), PAPER)
+    header(canvas, logo, title, index)
+    photo = open_image(assets.get(slot, ""), (952, 690), section)
+    canvas.alpha_composite(photo.convert("RGBA"), (64, 220))
     draw = ImageDraw.Draw(canvas)
-    overlay = Image.new("RGBA", (W, H), (7, 22, 36, 0))
-    od = ImageDraw.Draw(overlay)
-    od.rectangle((0, 850, W, H), fill=(7, 22, 36, 225 if style != 2 else 205))
-    canvas = Image.alpha_composite(canvas.convert("RGBA"), overlay).convert("RGB")
-    draw = ImageDraw.Draw(canvas)
-    if style == 0:
-        draw.rectangle((0, 0, W, 150), fill=BLUE)
-    elif style == 1:
-        draw.rectangle((0, 0, 22, H), fill=accent)
-        draw.rectangle((22, 0, W, 130), fill="#FFFFFF")
+    text(draw, (64, 980), section, 18, ORANGE, True)
+    text(draw, (64, 1030), title, 56, BLUE, True)
+    draw.line((64, 1115, 1016, 1115), fill=ORANGE, width=5)
+    if slot == "fault":
+        values = [data.get("fault_category", ""), data.get("model", ""), data.get("year", "")]
+    elif slot == "diagnosis":
+        values = ["Technical assessment", data.get("fault_category", ""), "Verify before programming"]
+    elif slot == "programming":
+        values = [data.get("programming", ""), data.get("service", ""), "Controlled remote procedure"]
     else:
-        draw.rectangle((0, 0, W, 130), fill="#FFFFFF")
-        draw.line((64, 120, 1016, 120), fill=accent, width=5)
-    if logo_img:
-        canvas.paste(logo_img, (62, 25), logo_img)
-    else:
-        txt(draw, (64, 52), "DEATON AUTO", 30, PAPER if style == 0 else BLUE, True)
-    txt(draw, (1018, 55), "01 / 05", 18, PAPER if style == 0 else BLUE, True, "ra")
-    txt(draw, (64, 1030), "REMOTE PROGRAMMING CASE", 19, "#DDE8F3", True)
-    txt(draw, (64, 1090), data.get("brand", ""), 34, PAPER, True)
-    txt(draw, (60, 1148), data.get("model", ""), 72, PAPER, True)
-    draw.rectangle((64, 1270, 510, 1277), fill=accent)
-    txt(draw, (64, 1310), data.get("service", ""), 31, PAPER, True)
-    txt(draw, (64, 1370), f"{data.get('year', '')} · {data.get('fault_category', '')}", 22, "#DDE8F3")
-    txt(draw, (64, 1560), "RESULT", 16, "#B3C9DC", True)
-    txt(draw, (64, 1600), data.get("result", ""), 30, PAPER, True)
+        values = [data.get("result", ""), "Function verified", "Case completed"]
+    y = 1195
+    for number, value in enumerate(values, 1):
+        text(draw, (70, y), f"0{number}", 20, ORANGE, True)
+        text(draw, (150, y), value, 30, INK, True)
+        draw.line((64, y + 58, 1016, y + 58), fill="#D4D7D6", width=2)
+        y += 126
+    footer(canvas)
     return canvas
 
 
@@ -139,25 +122,25 @@ def generate(parameters: Path) -> list[Path]:
     output_dir = case_dir / "output"
     output_dir.mkdir(exist_ok=True)
     data = dict(payload["information"])
+    data["ai_plan"] = payload.get("ai_plan", {})
     assets = payload["assets"]
-    logo_img = logo(assets.get("logo", ""))
-    pages = [("01_vehicle_exterior", "vehicle", "VEHICLE EXTERIOR", "VEHICLE", "Vehicle Exterior"),
-             ("02_dashboard_fault", "fault", "DASHBOARD & FAULT", "FAULT", "Dashboard / Fault"),
-             ("03_diagnosis", "diagnosis", "DIAGNOSIS", "ANALYSIS", "Diagnosis"),
-             ("04_programming", "programming", "PROGRAMMING", "REMOTE PROCEDURE", "Programming"),
-             ("05_repair_completed", "result", "REPAIR COMPLETED", "FINAL RESULT", "Repair Completed")]
+    logo = logo_image(assets.get("logo", ""))
+    pages = [
+        ("01_case_overview.png", cover(data, assets, logo)),
+        ("02_vehicle_fault.png", detail_page(data, assets, logo, "fault", "VEHICLE FAULT", "REPORTED ISSUE", 2)),
+        ("03_diagnosis.png", detail_page(data, assets, logo, "diagnosis", "DIAGNOSIS", "ANALYSIS", 3)),
+        ("04_programming.png", detail_page(data, assets, logo, "programming", "PROGRAMMING", "REMOTE PROCEDURE", 4)),
+        ("05_result.png", detail_page(data, assets, logo, "result", "COMPLETED", "FINAL RESULT", 5)),
+    ]
     paths = []
-    for style in range(3):
-        template_dir = output_dir / f"template_{style + 1}"
-        template_dir.mkdir(exist_ok=True)
-        for number, (stem, slot, title, section, label) in enumerate(pages, 1):
-            image = cover(data, assets, logo_img, style) if number == 1 else frame(data, assets, logo_img, slot, title, section, number, style)
-            path = template_dir / f"{number:02d}_{stem}.png"
-            image.save(path, "PNG", optimize=True)
-            paths.append(path.resolve())
+    for filename, image in pages:
+        path = output_dir / filename
+        image.convert("RGB").save(path, "PNG", optimize=True)
+        paths.append(path.resolve())
     return paths
 
 
 if __name__ == "__main__":
-    paths = generate(Path(sys.argv[1]).resolve())
+    parameter_file = Path(sys.argv[1]).resolve()
+    paths = generate(parameter_file)
     print(json.dumps({"files": [str(path) for path in paths], "generated_at": datetime.now(timezone.utc).isoformat()}))
