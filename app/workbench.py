@@ -210,14 +210,27 @@ class WorkbenchPage(QWidget):
     def _info_page(self):
         page = QWidget()
         layout = QVBoxLayout(page)
-        note = QLabel("按实际情况选择即可，不需要每项都填写。下拉选项统一显示为“英文 / 中文”；没有合适选项时可以直接输入中文，生成图片时会自动整理为英文。建议至少填写：车辆、客户问题、服务项目、处理过程和最终结果。")
+        note = QLabel("这里只填写已经完成、可以公开展示的案例事实。不要填写等待连接、待确认、进一步诊断等过程状态。下拉选项统一显示为“英文 / 中文”；没有合适选项时可以直接输入中文，生成图片时会自动整理为英文。")
         note.setObjectName("subtitle")
         card = QFrame(objectName="panel")
         form = QFormLayout(card)
         form.setContentsMargins(28, 28, 28, 28)
         options = self.store.options()
         self.model_catalog = self.store.model_options()
+        sections = {
+            "车辆信息": {"brand", "model", "year", "mileage", "location"},
+            "客户问题与诊断": {"customer_issue", "fault_category", "dtc_codes", "diagnosis"},
+            "已完成的远程服务": {"service", "programming", "programming_detail", "equipment"},
+            "修复结果与验证": {"result", "final_status", "verification"},
+        }
+        section_for = {key: title for title, keys in sections.items() for key in keys}
+        current_section = ""
         for key, label in CASE_FIELDS:
+            if section_for[key] != current_section:
+                current_section = section_for[key]
+                heading = QLabel(current_section)
+                heading.setStyleSheet("font-size: 16px; font-weight: 700; color: #123B68; padding-top: 12px;")
+                form.addRow(heading)
             combo = VisibleArrowComboBox(editable=True)
             combo.setPlaceholderText(self._field_placeholder(key))
             if key != "model":
@@ -249,17 +262,14 @@ class WorkbenchPage(QWidget):
             "year": "请选择或输入年份",
             "mileage": "例如：69664 km",
             "location": "例如：中国 / 美国 / 英国",
-            "customer_issue": "请选择或输入客户遇到的问题",
-            "diagnosis": "请选择或输入诊断发现",
-            "programming_detail": "请选择或输入具体处理过程",
-            "final_status": "请选择或输入最终状态",
-            "vehicle_condition": "例如：车辆无法启动 / 仪表亮故障灯",
-            "dtc_codes": "例如：U110100 / 通讯故障码",
-            "equipment": "例如：原厂诊断设备 / ODIS",
-            "power_voltage": "例如：供电稳定 / 约13.5伏",
-            "remote_method": "例如：远程编程会话",
-            "verification": "例如：最终扫描通过 / 功能测试通过",
-            "customer_confirmation": "例如：客户确认功能恢复",
+            "customer_issue": "例如：客户反馈自适应巡航无法使用",
+            "fault_category": "请选择主要故障类别",
+            "diagnosis": "例如：扫描发现模块编码和组件保护异常",
+            "programming_detail": "例如：完成模块编码、组件保护处理和匹配学习",
+            "final_status": "请选择已完成的案例结论",
+            "dtc_codes": "例如：U110100、U112100",
+            "equipment": "例如：ODIS / 原厂诊断设备",
+            "verification": "例如：最终扫描通过，功能测试正常",
         }.get(key, "请选择或输入")
 
     def _ai_page(self):
