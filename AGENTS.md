@@ -2,7 +2,7 @@
 
 ## Product boundary
 
-This repository is a Windows local image-case application. It has a single home screen and a single four-step workbench: assets, case information, AI plan, and generate/save. Do not add video workflows, complex navigation, bulk asset management, item ordering, state controls, replacement buttons, or automatic AI scanning.
+This repository is a Windows local image-case application. It opens directly into a four-step workbench: assets, case information, AI plan, and generate/save. The primary purpose is image production, not case browsing or display. Do not add video workflows, complex navigation, bulk asset management, item ordering, state controls, replacement buttons, or automatic AI scanning.
 
 ## Core contracts
 
@@ -10,7 +10,7 @@ This repository is a Windows local image-case application. It has a single home 
 - A new case seeds the sixth `logo` slot with `resources/branding/deaton_auto_logo.png`; users replace it by dropping a new image into that same slot.
 - `config/options.json` contains expandable dropdown suggestions. Every field remains editable and optional.
 - `core.ai_plan.OpenAIPlanService` only makes a request when the UI's manual action invokes it. It may send at most three explicitly checked images, compressed locally; API keys come only from `OPENAI_API_KEY`.
-- `core.local_renderer` is the bundled Pillow renderer; `scripts/generate_case.py` is its development command-line wrapper. Both receive one generated JSON parameter file and emit six 1080×1920 PNGs to the case output directory.
+- `core.local_renderer` is the bundled Pillow renderer; `scripts/generate_case.py` is its development command-line wrapper. Both receive one generated JSON parameter file and emit five 1080×1920 PNGs to the case output directory.
 - `core.generation.LocalGenerationService` invokes the bundled renderer directly so the packaged EXE does not require a Python installation.
 
 ## Delivery
