@@ -17,6 +17,8 @@ class OpenAIPlanService:
     jpeg_quality = 72
 
     def __init__(self, api_key: str | None = None, model: str | None = None):
+        # The UI may supply a locally configured key. Environment variables remain
+        # supported for command-line use and backwards compatibility.
         self.api_key = api_key or os.getenv("OPENAI_API_KEY", "")
         self.model = model or os.getenv("DEATON_OPENAI_MODEL", "gpt-4.1-mini")
 
