@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QPoint, Qt, Signal
 from PySide6.QtCore import QStringListModel
-from PySide6.QtGui import QDragEnterEvent, QDropEvent, QPixmap
+from PySide6.QtGui import QColor, QDragEnterEvent, QDropEvent, QPainter, QPixmap, QPolygon
 from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
@@ -53,6 +53,27 @@ QComboBox::drop-down { border: 0; width: 28px; }
 QCheckBox { spacing: 8px; }
 QScrollArea { border: 0; }
 """
+
+
+class VisibleArrowComboBox(QComboBox):
+    """Editable combo box with a theme-independent, always-visible arrow."""
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        x = self.width() - 18
+        y = self.height() // 2
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor("#123B68"))
+        painter.drawPolygon(QPolygon([QPoint(x - 5, y - 2), QPoint(x + 5, y - 2), QPoint(x, y + 4)]))
+
+    def mousePressEvent(self, event):
+        if event.position().x() >= self.width() - 36:
+            self.showPopup()
+            event.accept()
+            return
+        super().mousePressEvent(event)
 
 
 class SlotCard(QFrame):
@@ -193,7 +214,7 @@ class WorkbenchPage(QWidget):
         options = self.store.options()
         self.model_catalog = self.store.model_options()
         for key, label in CASE_FIELDS:
-            combo = QComboBox(editable=True)
+            combo = VisibleArrowComboBox(editable=True)
             if key != "model":
                 combo.addItems(options.get(key, []))
             combo.setInsertPolicy(QComboBox.NoInsert)
