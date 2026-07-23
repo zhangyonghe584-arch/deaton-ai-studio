@@ -16,6 +16,7 @@ SLOT_SPECS = (
 )
 
 CASE_FIELDS = (
+    # 只保留适合公开展示的已完成案例事实；过程状态和内部沟通不进入案例。
     ("brand", "车辆品牌"),
     ("model", "车型"),
     ("year", "年份"),
@@ -23,19 +24,15 @@ CASE_FIELDS = (
     ("location", "车辆地区"),
     ("customer_issue", "客户问题"),
     ("fault_category", "故障类别"),
-    ("diagnosis", "诊断发现"),
-    ("service", "服务项目"),
-    ("programming", "编程处理"),
-    ("programming_detail", "处理过程"),
-    ("result", "最终结果"),
-    ("final_status", "最终状态"),
-    ("vehicle_condition", "车辆当前状态"),
     ("dtc_codes", "故障码或故障现象"),
+    ("diagnosis", "诊断发现"),
+    ("service", "完成的服务项目"),
+    ("programming", "完成的编程处理"),
+    ("programming_detail", "处理内容"),
+    ("result", "修复结果"),
+    ("final_status", "案例结论"),
     ("equipment", "使用设备"),
-    ("power_voltage", "供电与通讯状态"),
-    ("remote_method", "远程处理方式"),
     ("verification", "修复验证"),
-    ("customer_confirmation", "客户确认"),
 )
 
 DEFAULT_OPTIONS = {
@@ -51,14 +48,9 @@ DEFAULT_OPTIONS = {
     "programming_detail": [],
     "result": ["Programming Completed / 编程完成", "Function Restored / 功能恢复", "Vehicle Started / 车辆启动", "Fault Cleared / 故障清除", "System Activated / 系统激活", "Adaptation Completed / 匹配完成", "No Critical Faults / 无严重故障"],
     "final_status": [],
-    "vehicle_condition": [],
     "dtc_codes": [],
     "equipment": [],
-    "power_voltage": [],
-    "remote_method": [],
     "verification": [],
-    "customer_confirmation": [],
 }
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
-
