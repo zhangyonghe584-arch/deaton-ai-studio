@@ -112,13 +112,13 @@ def detail_page(data, assets, logo, slot, title, section, index):
     text(draw, (64, 1030), title, 56, BLUE, True)
     draw.line((64, 1115, 1016, 1115), fill=ORANGE, width=5)
     if slot == "fault":
-        values = [english(data.get("fault_category"), "REPORTED ISSUE"), english(data.get("model"), "VEHICLE"), english(data.get("year"), "CASE REVIEW")]
+        values = [english(data.get("customer_issue"), "REPORTED ISSUE"), english(data.get("fault_category"), "SYSTEM FAULT"), english(data.get("model"), "VEHICLE")]
     elif slot == "diagnosis":
-        values = ["Technical assessment", english(data.get("fault_category"), "SYSTEM FAULT"), "Verify before programming"]
+        values = ["Technical assessment", english(data.get("diagnosis"), "SYSTEM CHECK COMPLETED"), english(data.get("fault_category"), "SYSTEM FAULT")]
     elif slot == "programming":
-        values = [english(data.get("programming"), "MODULE CODING"), english(data.get("service"), "REMOTE PROGRAMMING"), "Controlled remote procedure"]
+        values = [english(data.get("programming"), "MODULE CODING"), english(data.get("programming_detail"), "CONTROLLED REMOTE PROCEDURE"), english(data.get("service"), "REMOTE PROGRAMMING")]
     else:
-        values = [english(data.get("result"), "SERVICE COMPLETED"), "Function verified", "Case completed"]
+        values = [english(data.get("result"), "SERVICE COMPLETED"), english(data.get("final_status"), "FUNCTION VERIFIED"), "CASE COMPLETED"]
     y = 1195
     for number, value in enumerate(values, 1):
         text(draw, (70, y), f"0{number}", 20, ORANGE, True)
