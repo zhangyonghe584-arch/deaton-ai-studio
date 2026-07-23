@@ -21,10 +21,10 @@ class LocalGenerationTests(unittest.TestCase):
 
             files = LocalGenerationService(store).generate(case_dir)
 
-            self.assertEqual(len(files), 5)
+            self.assertEqual(len(files), 15)
             self.assertTrue(all(path.is_file() for path in files))
             with Image.open(files[0]) as first_image:
-                self.assertEqual(first_image.size, (1080, 1920))
+                self.assertEqual(first_image.size, (1080, 1920))\n            self.assertEqual(files[5].parent.name, "template_2")\n            self.assertEqual(files[10].parent.name, "template_3")
             self.assertEqual([path.name for path in files], [
                 "01_case_overview.png", "02_vehicle_fault.png", "03_diagnosis.png",
                 "04_programming.png", "05_result.png",
