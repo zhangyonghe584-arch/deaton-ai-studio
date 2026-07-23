@@ -210,7 +210,7 @@ class WorkbenchPage(QWidget):
     def _info_page(self):
         page = QWidget()
         layout = QVBoxLayout(page)
-        note = QLabel("填写中文即可。下拉选项统一显示为“英文 / 中文”，生成图片时会自动整理为英文；没有合适选项时可以直接输入。")
+        note = QLabel("按实际情况选择即可，不需要每项都填写。下拉选项统一显示为“英文 / 中文”；没有合适选项时可以直接输入中文，生成图片时会自动整理为英文。建议至少填写：车辆、客户问题、服务项目、处理过程和最终结果。")
         note.setObjectName("subtitle")
         card = QFrame(objectName="panel")
         form = QFormLayout(card)
@@ -235,7 +235,9 @@ class WorkbenchPage(QWidget):
             form.addRow(f"{label}", combo)
         layout.addWidget(note)
         layout.addSpacing(8)
-        layout.addWidget(card)
+        scroll = QScrollArea(widgetResizable=True)
+        scroll.setWidget(card)
+        layout.addWidget(scroll, 1)
         layout.addStretch()
         return page
 
@@ -251,6 +253,13 @@ class WorkbenchPage(QWidget):
             "diagnosis": "请选择或输入诊断发现",
             "programming_detail": "请选择或输入具体处理过程",
             "final_status": "请选择或输入最终状态",
+            "vehicle_condition": "例如：车辆无法启动 / 仪表亮故障灯",
+            "dtc_codes": "例如：U110100 / 通讯故障码",
+            "equipment": "例如：原厂诊断设备 / ODIS",
+            "power_voltage": "例如：供电稳定 / 约13.5伏",
+            "remote_method": "例如：远程编程会话",
+            "verification": "例如：最终扫描通过 / 功能测试通过",
+            "customer_confirmation": "例如：客户确认功能恢复",
         }.get(key, "请选择或输入")
 
     def _ai_page(self):
@@ -502,3 +511,4 @@ class ApplicationWindow(QMainWindow):
             page.findChild(QFrame, "panel").layout().addWidget(api_button)
         except (FileNotFoundError, ValueError) as error:
             QMessageBox.warning(self, "无法打开案例", str(error))
+
