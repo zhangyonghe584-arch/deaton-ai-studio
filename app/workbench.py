@@ -197,9 +197,12 @@ class WorkbenchPage(QWidget):
             if key != "model":
                 combo.addItems(options.get(key, []))
             combo.setInsertPolicy(QComboBox.NoInsert)
+            combo.setMaxVisibleItems(14)
+            combo.setPlaceholderText("请选择或输入 / Select or type")
             completer = QCompleter(combo.model(), combo)
             completer.setCaseSensitivity(Qt.CaseInsensitive)
             completer.setFilterMode(Qt.MatchContains)
+            completer.setCompletionMode(QCompleter.PopupCompletion)
             combo.setCompleter(completer)
             combo.setCurrentText("")
             combo.editTextChanged.connect(self._save_information)
