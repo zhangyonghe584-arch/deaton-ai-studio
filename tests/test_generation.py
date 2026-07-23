@@ -16,8 +16,21 @@ class LocalGenerationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             store = CaseStore(Path(directory) / "cases")
             case_dir = store.create("Needs plan")
+            manifest = store.load(case_dir)
+            manifest["use_ai"] = True
+            store.save(case_dir, manifest)
             with self.assertRaises(ValueError):
                 LocalGenerationService(store).generate(case_dir)
+
+    def test_generation_can_skip_ai_when_switch_is_off(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = CaseStore(Path(directory) / "cases")
+            case_dir = store.create("Without AI")
+            store.set_information(case_dir, {"brand": "BMW", "model": "G20"})
+
+            files = LocalGenerationService(store).generate(case_dir)
+
+            self.assertEqual(len(files), 5)
 
     def test_local_script_generates_five_portrait_preview_images(self):
         with tempfile.TemporaryDirectory() as directory:
