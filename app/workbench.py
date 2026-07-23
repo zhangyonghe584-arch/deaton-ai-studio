@@ -191,7 +191,7 @@ class WorkbenchPage(QWidget):
     def _asset_page(self):
         page = QWidget()
         layout = QVBoxLayout(page)
-        instruction = QLabel("固定六槽位，每格至多一张图片。空槽位不阻止生成；将新图拖入原格即可更新。")
+        instruction = QLabel("固定六槽位 / Six fixed slots；每格至多一张图片 / one image per slot。空槽位不阻止生成 / Empty slots are allowed。")
         instruction.setObjectName("subtitle")
         layout.addWidget(instruction)
         grid = QGridLayout()
@@ -210,7 +210,7 @@ class WorkbenchPage(QWidget):
     def _info_page(self):
         page = QWidget()
         layout = QVBoxLayout(page)
-        note = QLabel("所有字段都可留空或直接输入。可扩展选项保存在 config/options.json。")
+        note = QLabel("案例字段中英文并列显示，可留空或直接输入；车型选项会随品牌自动切换，也支持手动输入。 / Bilingual case fields; models update by brand and remain editable。")
         note.setObjectName("subtitle")
         card = QFrame(objectName="panel")
         form = QFormLayout(card)
