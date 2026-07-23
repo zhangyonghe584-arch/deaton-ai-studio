@@ -65,61 +65,27 @@ class BrandService:
 
 
     def initialize(self):
-
         if not os.path.exists(self.brand_file):
-
-            self.save_profile(
-                DEFAULT_BRAND
-            )
-
+            self._write_profile(DEFAULT_BRAND.copy())
 
     def load_profile(self):
-
-        if not os.path.exists(
-            self.brand_file
-        ):
-            self.initialize()
-
-
-        with open(
-            self.brand_file,
-            "r",
-            encoding="utf-8"
-        ) as f:
-
-            data = json.load(f)
-
+        self.initialize()
+        with open(self.brand_file, "r", encoding="utf-8") as file:
+            data = json.load(file)
 
         profile = DEFAULT_BRAND.copy()
-
         profile.update(data)
-
         return profile
-
-
 
     def save_profile(self, values):
-
         profile = self.load_profile()
-
         profile.update(values)
-
-
-        with open(
-            self.brand_file,
-            "w",
-            encoding="utf-8"
-        ) as f:
-
-            json.dump(
-                profile,
-                f,
-                ensure_ascii=False,
-                indent=4
-            )
-
-
+        self._write_profile(profile)
         return profile
+
+    def _write_profile(self, profile):
+        with open(self.brand_file, "w", encoding="utf-8") as file:
+            json.dump(profile, file, ensure_ascii=False, indent=4)
 
 
 
