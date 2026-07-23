@@ -95,6 +95,7 @@ class CaseStore:
             "information": manifest["information"],
             "assets": {key: str((case_path / value).resolve()) if value else "" for key, value in manifest["assets"].items()},
             "ai_plan": manifest["ai_plan"],
+            "use_ai": bool(manifest.get("use_ai", False)),
         }
         parameter_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         return parameter_path
@@ -129,6 +130,7 @@ class CaseStore:
             "assets": {key: "" for key, _ in SLOT_SPECS},
             "information": {key: "" for key, _ in CASE_FIELDS},
             "ai_plan": {"content": "", "confirmed": False, "updated_at": ""},
+            "use_ai": False,
             "generation": {"preview_files": [], "last_generated_at": "", "save_path": ""},
         }
 
