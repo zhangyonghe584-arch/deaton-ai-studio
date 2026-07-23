@@ -1,0 +1,9 @@
+{
+  "brand": ["BMW", "Mercedes-Benz", "Porsche", "Audi", "Volkswagen", "Toyota"],
+  "model": [],
+  "year": ["2026", "2025", "2024", "2023", "2022", "2021", "2020"],
+  "fault_category": ["ECU", "BCM", "Immobilizer", "Key", "Dashboard", "No Start"],
+  "service": ["Remote Programming", "Remote Diagnostics", "OEM Coding", "Module Replacement"],
+  "programming": ["ECU Programming", "Module Coding", "Key Programming", "Calibration"],
+  "result": ["Programming Completed", "Function Restored", "Vehicle Started", "Fault Cleared"]
+}

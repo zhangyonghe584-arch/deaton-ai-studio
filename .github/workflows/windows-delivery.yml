@@ -1,0 +1,33 @@
+name: Windows delivery
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-smoke-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Test core image workflow
+        run: python -m unittest discover -s tests -v
+      - name: Build Windows EXE
+        shell: pwsh
+        run: .\scripts\build_windows.ps1
+      - name: Run packaged EXE without Python application launcher
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+          DEATON_SMOKE_TEST: "1"
+        run: .\dist\DeatonAutoImageStudio.exe
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeatonAutoImageStudio-windows
+          path: dist/DeatonAutoImageStudio.exe
+          if-no-files-found: error

@@ -1,82 +1,21 @@
-# Deaton AI Studio AI Development Rules
+# Deaton Auto Image Case Studio
 
+## Product boundary
 
-## Project
+This repository is a Windows local image-case application. It has a single home screen and a single four-step workbench: assets, case information, AI plan, and generate/save. Do not add video workflows, complex navigation, bulk asset management, item ordering, state controls, replacement buttons, or automatic AI scanning.
 
-Project Name:
+## Core contracts
 
-Deaton AI Studio
+- `core.case_store.CaseStore` owns a compact local `case.json`, six fixed one-image slots, and the case's `output/` directory.
+- A new case seeds the sixth `logo` slot with `resources/branding/deaton_auto_logo.png`; users replace it by dropping a new image into that same slot.
+- `config/options.json` contains expandable dropdown suggestions. Every field remains editable and optional.
+- `core.ai_plan.OpenAIPlanService` only makes a request when the UI's manual action invokes it. It may send at most three explicitly checked images, compressed locally; API keys come only from `OPENAI_API_KEY`.
+- `core.local_renderer` is the bundled Pillow renderer; `scripts/generate_case.py` is its development command-line wrapper. Both receive one generated JSON parameter file and emit six 1080×1920 PNGs to the case output directory.
+- `core.generation.LocalGenerationService` invokes the bundled renderer directly so the packaged EXE does not require a Python installation.
 
+## Delivery
 
-## Purpose
-
-This is a professional Windows desktop software developed for Deaton Auto.
-
-The software is used for automotive remote programming case production.
-
-
-## Development Rules
-
-- Read existing code before modification.
-- Do not randomly change project architecture.
-- Do not delete existing functions.
-- Keep modules independent.
-- Test after changes.
-- Maintain clean code structure.
-
-
-## Technology
-
-Language:
-
-Python
-
-
-Framework:
-
-PySide6
-
-
-Target:
-
-Windows Desktop Application
-
-
-## Architecture
-
-Keep separation:
-
-ui/
-User interface
-
-engine/
-Business logic
-
-ai/
-AI API functions
-
-templates/
-Production templates
-
-resources/
-Static resources
-
-config/
-Configuration
-
-
-## Important
-
-This is not a demo project.
-
-The final goal is a real daily-use commercial internal tool.
-
-## Current MVP Contracts
-
-- `engine.case_service.CaseService` owns `project.json` metadata for case info, imported assets, asset state/order/main-image selection, and export history while preserving legacy fields.
-- `engine.image_manager.ImageManager` keeps the existing six image categories and provides import, replacement, and removal; retain `save_image()` compatibility.
-- `engine.brand_service.BrandService` stores the reusable publication identity in `config/brand.json`; do not duplicate it as per-case data.
-- `engine.image_renderer.ImageCaseRenderer` is the fixed-template boundary. Current templates are `case_cover`, `diagnosis_summary`, and `result_card`; `render_all()` is the low-step publication workflow.
-- `engine.case_option_service.CaseOptionService` loads editable dropdown suggestions from `config/options/*.txt`; one non-comment line equals one option. Do not store option catalogs in `project.json`.
-- `ui.video_page.VideoPage` reserves the future video production workspace only. Do not add import, timeline, render, or export behavior until a video-production phase is approved.
-- Verify the workflow with: `python -m unittest -v test_project.py test_image_case_mvp.py test_case_data_assets.py test_brand_templates.py test_case_options.py`.
+- `scripts/build_windows.ps1` creates the `DeatonAutoImageStudio.exe` PyInstaller build.
+- `scripts/install_desktop_shortcut.ps1` creates the desktop shortcut.
+- Validate the core workflow with `python -m unittest discover -s tests -v`.
+- The default Windows data path is `Documents/Deaton Auto Cases`; it can be overridden with `DEATON_PROJECTS_DIR`.
