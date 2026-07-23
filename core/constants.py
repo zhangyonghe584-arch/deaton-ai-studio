@@ -21,9 +21,7 @@ CASE_FIELDS = (
     ("model", "车型"),
     ("year", "年份"),
     ("mileage", "里程"),
-    ("continent_region", "所在地区"),
-    ("country", "国家"),
-    ("location", "车辆地区（兼容旧案例）"),
+    ("location", "车辆地区"),
     ("customer_issue", "客户问题"),
     ("fault_category", "故障类别"),
     ("dtc_codes", "故障码或故障现象"),
@@ -41,8 +39,6 @@ DEFAULT_OPTIONS = {
     "brand": ["BMW / 宝马", "Mercedes-Benz / 奔驰", "Porsche / 保时捷", "Audi / 奥迪", "Volkswagen / 大众", "Toyota / 丰田"],
     "model": [""],
     "year": [str(year) for year in range(2026, 1989, -1)],
-    "continent_region": ["North America / 北美洲", "Europe / 欧洲", "Middle East / 中东", "East Asia / 东亚", "Southeast Asia / 东南亚", "South Asia / 南亚", "Oceania / 大洋洲", "Central Asia / 中亚"],
-    "country": [],
     "mileage": [],
     "location": [],
     "customer_issue": [],
@@ -58,3 +54,4 @@ DEFAULT_OPTIONS = {
 }
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
+
