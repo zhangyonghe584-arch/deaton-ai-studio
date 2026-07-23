@@ -15,7 +15,10 @@ class LocalGenerationService:
 
     def generate(self, case_dir: Path | str) -> list[Path]:
         manifest = self.store.load(case_dir)
-        if not manifest["ai_plan"].get("content", "").strip() or not manifest["ai_plan"].get("confirmed", False):
+        if manifest.get("use_ai", False) and (
+            not manifest["ai_plan"].get("content", "").strip()
+            or not manifest["ai_plan"].get("confirmed", False)
+        ):
             raise ValueError("No confirmed local AI plan is available; confirm the plan before generating images.")
         parameter_path = self.store.write_generation_parameters(case_dir)
         files = generate(parameter_path)
