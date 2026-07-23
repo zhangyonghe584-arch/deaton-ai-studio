@@ -270,7 +270,7 @@ class WorkbenchPage(QWidget):
     def _generation_page(self):
         page = QWidget()
         layout = QVBoxLayout(page)
-        note = QLabel("生成使用本机 Pillow 脚本，最终输出 5 张 1080×1920 图片。")
+        note = QLabel("生成使用本机 Pillow 脚本，最终输出三套固定模板，共15张图片（每套5张）。前两张适配竖图，后三张适配横图。")
         note.setObjectName("subtitle")
         self.save_path_label = QLabel()
         self.save_path_label.setObjectName("subtitle")
@@ -392,9 +392,9 @@ class WorkbenchPage(QWidget):
         for index, path in enumerate(paths):
             if path.is_file():
                 label = QLabel()
-                label.setPixmap(QPixmap(str(path)).scaledToWidth(210, Qt.SmoothTransformation))
+                label.setPixmap(QPixmap(str(path)).scaledToWidth(170, Qt.SmoothTransformation))
                 label.setToolTip(path.name)
-                self.preview_layout.addWidget(label, index // 3, index % 3)
+                self.preview_layout.addWidget(label, index // 5, index % 5)
 
     def _save_output(self):
         destination = self.manifest.get("generation", {}).get("save_path", "")

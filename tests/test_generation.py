@@ -12,7 +12,7 @@ from core.generation import LocalGenerationService
 
 
 class LocalGenerationTests(unittest.TestCase):
-    def test_local_script_generates_five_portrait_preview_images(self):
+    def test_local_script_generates_fifteen_preview_images(self):
         with tempfile.TemporaryDirectory() as directory:
             store = CaseStore(Path(directory) / "cases")
             case_dir = store.create("Local output")
@@ -21,14 +21,22 @@ class LocalGenerationTests(unittest.TestCase):
 
             files = LocalGenerationService(store).generate(case_dir)
 
-            self.assertEqual(len(files), 5)
+            self.assertEqual(len(files), 15)
             self.assertTrue(all(path.is_file() for path in files))
             with Image.open(files[0]) as first_image:
                 self.assertEqual(first_image.size, (1080, 1920))
-            self.assertEqual([path.name for path in files], [
-                "01_case_overview.png", "02_vehicle_fault.png", "03_diagnosis.png",
-                "04_programming.png", "05_result.png",
-            ])
+            self.assertEqual(files[5].parent.name, "template_2")
+            self.assertEqual(files[10].parent.name, "template_3")
+            self.assertEqual(
+                [path.name for path in files[:5]],
+                [
+                    "01_vehicle_exterior.png",
+                    "02_dashboard_fault.png",
+                    "03_diagnosis.png",
+                    "04_programming.png",
+                    "05_repair_completed.png",
+                ],
+            )
 
     def test_command_line_renderer_generates_from_parameter_file(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -45,5 +53,5 @@ class LocalGenerationTests(unittest.TestCase):
             )
             output = json.loads(completed.stdout)
 
-            self.assertEqual(len(output["files"]), 5)
+            self.assertEqual(len(output["files"]), 15)
             self.assertTrue(all(Path(path).is_file() for path in output["files"]))
