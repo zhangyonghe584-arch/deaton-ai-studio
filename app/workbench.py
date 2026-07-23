@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QStringListModel
 from PySide6.QtGui import QDragEnterEvent, QDropEvent, QPixmap
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -120,6 +121,7 @@ class WorkbenchPage(QWidget):
         self.manifest = self.store.load(case_dir)
         self.slot_cards: dict[str, SlotCard] = {}
         self.fields: dict[str, QComboBox] = {}
+        self.model_catalog: dict[str, list[str]] = {}
         self.step_group = QButtonGroup(self)
         self._build()
         self._load_manifest()
@@ -189,24 +191,22 @@ class WorkbenchPage(QWidget):
         form = QFormLayout(card)
         form.setContentsMargins(28, 28, 28, 28)
         options = self.store.options()
-        self.brand_options = options.get("brand", [])
-        self.models_by_brand = options.get("models_by_brand", {})
+        self.model_catalog = self.store.model_options()
         for key, label in CASE_FIELDS:
             combo = QComboBox(editable=True)
+            if key != "model":
+                combo.addItems(options.get(key, []))
             combo.setInsertPolicy(QComboBox.NoInsert)
-            combo.setMaxVisibleItems(15)
-            combo.addItems(options.get(key, []))
             completer = QCompleter(combo.model(), combo)
             completer.setCaseSensitivity(Qt.CaseInsensitive)
             completer.setFilterMode(Qt.MatchContains)
-            completer.setCompletionMode(QCompleter.PopupCompletion)
             combo.setCompleter(completer)
             combo.setCurrentText("")
             combo.editTextChanged.connect(self._save_information)
+            if key == "brand":
+                combo.currentTextChanged.connect(self._brand_changed)
             self.fields[key] = combo
             form.addRow(f"{label}", combo)
-        self.fields["brand"].currentTextChanged.connect(self._update_model_options)
-        self._update_model_options(self.fields["brand"].currentText())
         layout.addWidget(note)
         layout.addSpacing(8)
         layout.addWidget(card)
@@ -248,13 +248,18 @@ class WorkbenchPage(QWidget):
         layout = QVBoxLayout(page)
         note = QLabel("生成使用本机 Pillow 脚本，最终输出 5 张 1080×1920 图片。")
         note.setObjectName("subtitle")
+        self.save_path_label = QLabel()
+        self.save_path_label.setObjectName("subtitle")
         actions = QHBoxLayout()
         self.generate_button = QPushButton("本地生成预览")
         self.generate_button.clicked.connect(self._generate)
         save_button = QPushButton("保存", objectName="secondary")
         save_button.clicked.connect(self._save_output)
+        change_path_button = QPushButton("更改保存路径", objectName="secondary")
+        change_path_button.clicked.connect(self._change_save_path)
         actions.addWidget(self.generate_button)
         actions.addWidget(save_button)
+        actions.addWidget(change_path_button)
         actions.addStretch()
         self.preview_layout = QGridLayout()
         preview_content = QWidget()
@@ -262,26 +267,33 @@ class WorkbenchPage(QWidget):
         scroll = QScrollArea(widgetResizable=True)
         scroll.setWidget(preview_content)
         layout.addWidget(note)
+        layout.addWidget(self.save_path_label)
         layout.addLayout(actions)
         layout.addWidget(scroll, 1)
         return page
 
-    def _update_model_options(self, brand: str):
+    def _brand_changed(self, brand: str):
         model_combo = self.fields.get("model")
         if not model_combo:
             return
-        current = model_combo.currentText()
-        models = self.models_by_brand.get(brand, [])
+        previous = model_combo.currentText()
         model_combo.blockSignals(True)
         model_combo.clear()
-        model_combo.addItems(models)
-        model_combo.setCurrentText(current if current in models else "")
+        model_combo.addItems(self.model_catalog.get(brand, []))
+        model_combo.setCurrentText(previous if previous in self.model_catalog.get(brand, []) else "")
         model_combo.blockSignals(False)
-        completer = QCompleter(model_combo.model(), model_combo)
-        completer.setCaseSensitivity(Qt.CaseInsensitive)
-        completer.setFilterMode(Qt.MatchContains)
-        completer.setCompletionMode(QCompleter.PopupCompletion)
-        model_combo.setCompleter(completer)
+
+    def _change_save_path(self):
+        current = self.manifest.get("generation", {}).get("save_path", "")
+        destination = QFileDialog.getExistingDirectory(self, "选择默认保存文件夹", current or str(Path.home()))
+        if destination:
+            self.manifest = self.store.set_save_path(self.case_dir, destination)
+            self._update_save_path_label()
+
+    def _update_save_path_label(self):
+        destination = self.manifest.get("generation", {}).get("save_path", "")
+        if hasattr(self, "save_path_label"):
+            self.save_path_label.setText(f"默认保存位置：{destination or '尚未设置，首次保存时选择'}")
 
     def _load_manifest(self):
         self.manifest = self.store.load(self.case_dir)
@@ -292,11 +304,13 @@ class WorkbenchPage(QWidget):
             combo.blockSignals(True)
             combo.setCurrentText(self.manifest["information"].get(key, ""))
             combo.blockSignals(False)
+        self._brand_changed(self.fields["brand"].currentText())
         self.plan_editor.blockSignals(True)
         self.plan_editor.setPlainText(self.manifest["ai_plan"].get("content", ""))
         self.plan_editor.blockSignals(False)
         self.confirm_plan.setChecked(self.manifest["ai_plan"].get("confirmed", False))
         self._show_previews()
+        self._update_save_path_label()
 
     def _set_asset(self, slot: str, source: Path):
         try:
