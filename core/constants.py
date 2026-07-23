@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt, Signal
 RESOURCE_DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
 PROJECTS_DIR = Path(os.getenv("DEATON_PROJECTS_DIR", Path.home() / "Documents" / "Deaton Auto Cases"))
 DEFAULT_LOGO = RESOURCE_DIR / "resources" / "branding" / "deaton_auto_logo.png"
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
 
 SLOT_SPECS = (
     ("vehicle", "车辆外观 / Vehicle Exterior"),
