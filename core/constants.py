@@ -26,9 +26,9 @@ CASE_FIELDS = (
 )
 
 DEFAULT_OPTIONS = {
-    "brand": ["BMW", "Mercedes-Benz", "Porsche", "Audi", "Volkswagen", "Toyota"],
+    "brand": ["BMW / 宝马", "Mercedes-Benz / 奔驰", "Porsche / 保时捷", "Audi / 奥迪", "Volkswagen / 大众", "Toyota / 丰田"],
     "model": [""],
-    "year": ["2026", "2025", "2024", "2023", "2022", "2021", "2020"],
+    "year": [str(year) for year in range(2026, 1989, -1)],
     "fault_category": ["ECU", "BCM", "Immobilizer", "Key", "Dashboard", "No Start"],
     "service": ["Remote Programming", "Remote Diagnostics", "OEM Coding", "Module Replacement"],
     "programming": ["ECU Programming", "Module Coding", "Key Programming", "Calibration"],
