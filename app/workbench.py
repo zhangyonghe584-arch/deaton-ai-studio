@@ -265,12 +265,19 @@ class WorkbenchPage(QWidget):
     def _ai_page(self):
         page = QWidget()
         layout = QVBoxLayout(page)
-        warning = QLabel("只有点击按钮后才会调用 AI：已有 1–5 张案例图都可以分析，Logo 会一并作为参考。AI 方案会保存到本地，再由程序生成 5 张成品。")
+        warning = QLabel("AI 分析是可选的。关闭时可直接按案例信息和素材生成；开启后才会先分析方案。已有 1–5 张案例图都可以分析，Logo 会一并作为参考。")
         warning.setObjectName("subtitle")
         layout.addWidget(warning)
         selector = QFrame(objectName="panel")
         selector_layout = QVBoxLayout(selector)
         selector_layout.setContentsMargins(20, 20, 20, 20)
+        self.use_ai = QCheckBox("启用 AI 分析（可选）")
+        self.use_ai.setToolTip("关闭：跳过 AI，直接生成图片；开启：先分析并确认 AI 方案")
+        self.use_ai.toggled.connect(self._ai_mode_changed)
+        selector_layout.addWidget(self.use_ai)
+        self.ai_mode_label = QLabel()
+        self.ai_mode_label.setObjectName("subtitle")
+        selector_layout.addWidget(self.ai_mode_label)
         selector_layout.addWidget(QLabel("勾选要交给 AI 分析的案例图片（1–5 张；Logo 会自动一并分析）"))
         self.ai_checks: dict[str, QCheckBox] = {}
         for key, label in SLOT_SPECS:
@@ -360,6 +367,10 @@ class WorkbenchPage(QWidget):
         self.plan_editor.setPlainText(self.manifest["ai_plan"].get("content", ""))
         self.plan_editor.blockSignals(False)
         self.confirm_plan.setChecked(self.manifest["ai_plan"].get("confirmed", False))
+        self.use_ai.blockSignals(True)
+        self.use_ai.setChecked(bool(self.manifest.get("use_ai", False)))
+        self.use_ai.blockSignals(False)
+        self._ai_mode_changed(self.use_ai.isChecked())
         self._show_previews()
         self._update_save_path_label()
 
@@ -376,6 +387,20 @@ class WorkbenchPage(QWidget):
 
     def _plan_changed(self):
         self.store.set_ai_plan(self.case_dir, self.plan_editor.toPlainText(), self.confirm_plan.isChecked())
+
+    def _ai_mode_changed(self, enabled: bool):
+        manifest = self.store.load(self.case_dir)
+        manifest["use_ai"] = bool(enabled)
+        self.store.save(self.case_dir, manifest)
+        self.ai_mode_label.setText(
+            "当前：生成时会先使用 AI 方案" if enabled else "当前：跳过 AI，直接使用案例信息和素材生成"
+        )
+        for widget in (self.ai_checks, self.analyze_button, self.plan_editor, self.confirm_plan):
+            if isinstance(widget, dict):
+                for child in widget.values():
+                    child.setEnabled(enabled)
+            else:
+                widget.setEnabled(enabled)
 
     def _analyze(self):
         selected = [self.store.asset_path(self.case_dir, key) for key, check in self.ai_checks.items() if check.isChecked()]
@@ -406,7 +431,10 @@ class WorkbenchPage(QWidget):
         self._save_information()
         self._plan_changed()
         manifest = self.store.load(self.case_dir)
-        if not manifest["ai_plan"].get("content", "").strip() or not manifest["ai_plan"].get("confirmed", False):
+        if manifest.get("use_ai", False) and (
+            not manifest["ai_plan"].get("content", "").strip()
+            or not manifest["ai_plan"].get("confirmed", False)
+        ):
             QMessageBox.warning(self, "请先确认 AI 方案", "请先完成 AI 分析（或填写方案）并勾选“确认使用这份方案进行生成”。方案会先保存到本地，再由代码生成图片。")
             return
         self.generate_button.setEnabled(False)
@@ -511,4 +539,3 @@ class ApplicationWindow(QMainWindow):
             page.findChild(QFrame, "panel").layout().addWidget(api_button)
         except (FileNotFoundError, ValueError) as error:
             QMessageBox.warning(self, "无法打开案例", str(error))
-
