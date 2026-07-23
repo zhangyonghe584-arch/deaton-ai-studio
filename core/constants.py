@@ -29,6 +29,13 @@ CASE_FIELDS = (
     ("programming_detail", "处理过程"),
     ("result", "最终结果"),
     ("final_status", "最终状态"),
+    ("vehicle_condition", "车辆当前状态"),
+    ("dtc_codes", "故障码或故障现象"),
+    ("equipment", "使用设备"),
+    ("power_voltage", "供电与通讯状态"),
+    ("remote_method", "远程处理方式"),
+    ("verification", "修复验证"),
+    ("customer_confirmation", "客户确认"),
 )
 
 DEFAULT_OPTIONS = {
@@ -44,6 +51,14 @@ DEFAULT_OPTIONS = {
     "programming_detail": [],
     "result": ["Programming Completed / 编程完成", "Function Restored / 功能恢复", "Vehicle Started / 车辆启动", "Fault Cleared / 故障清除", "System Activated / 系统激活", "Adaptation Completed / 匹配完成", "No Critical Faults / 无严重故障"],
     "final_status": [],
+    "vehicle_condition": [],
+    "dtc_codes": [],
+    "equipment": [],
+    "power_voltage": [],
+    "remote_method": [],
+    "verification": [],
+    "customer_confirmation": [],
 }
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
+
