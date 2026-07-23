@@ -29,3 +29,4 @@ This repository is a Windows local image-case application. It opens directly int
 - Source photos are centered and non-cropping so vehicle and instrument details remain visible.
 - Keep AI calls manual and low-cost; local Pillow code remains responsible for image generation.
 - AI analysis is optional. When the case switch is off, generation may proceed directly from case information and local assets; when on, a confirmed local AI plan is required.
+
