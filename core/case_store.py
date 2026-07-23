@@ -120,16 +120,6 @@ class CaseStore:
         return {str(key): [str(value) for value in values if str(value).strip()]
                 for key, values in models.items() if isinstance(values, list)}
 
-    def country_options(self) -> dict[str, list[str]]:
-        """Return countries grouped by the selectable geographic region."""
-        if not self.options_file.is_file():
-            return {}
-        with self.options_file.open(encoding="utf-8") as file:
-            configured = json.load(file)
-        countries = configured.get("countries_by_region", {})
-        return {str(key): [str(value) for value in values if str(value).strip()]
-                for key, values in countries.items() if isinstance(values, list)}
-
     def _default_manifest(self, title: str) -> dict[str, Any]:
         now = self._timestamp()
         return {
@@ -171,3 +161,4 @@ class CaseStore:
         temporary_path = case_dir / f".{self.manifest_name}.tmp"
         temporary_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
         temporary_path.replace(case_dir / self.manifest_name)
+
