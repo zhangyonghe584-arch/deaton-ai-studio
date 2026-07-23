@@ -71,9 +71,16 @@ def frame(data, assets, logo_img, slot, title, section, index, style):
         txt(draw, (1018, 56), f"CASE {index:02d}", 17, "#697176", True, "ra")
     if logo_img:
         canvas.paste(logo_img, (62, 24 if style != 1 else 24), logo_img)
-    photo = fit(assets.get(slot, ""), (952, 690), section, (0.5, 0.42))
-    canvas.paste(photo, (64, 205 if style != 2 else 220))
-    y = 965 if style != 2 else 990
+    if slot == "fault":
+        photo_size = (690, 920)
+        photo_position = (195, 190 if style != 2 else 205)
+        y = 1190 if style != 2 else 1215
+    else:
+        photo_size = (952, 690)
+        photo_position = (64, 205 if style != 2 else 220)
+        y = 965 if style != 2 else 990
+    photo = fit(assets.get(slot, ""), photo_size, section, (0.5, 0.42))
+    canvas.paste(photo, photo_position)
     txt(draw, (64, y), section, 17, accent, True)
     txt(draw, (64, y + 55), title, 52 if style != 1 else 46, BLUE, True)
     draw.line((64, y + 135, 1016, y + 135), fill=accent, width=5)
