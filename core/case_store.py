@@ -109,6 +109,16 @@ class CaseStore:
                     options[key] = [str(value).strip() for value in values if str(value).strip()]
         return options
 
+    def model_options(self) -> dict[str, list[str]]:
+        """Return the bilingual-brand keyed model catalog, if configured."""
+        if not self.options_file.is_file():
+            return {}
+        with self.options_file.open(encoding="utf-8") as file:
+            configured = json.load(file)
+        models = configured.get("models_by_brand", {})
+        return {str(key): [str(value) for value in values if str(value).strip()]
+                for key, values in models.items() if isinstance(values, list)}
+
     def _default_manifest(self, title: str) -> dict[str, Any]:
         now = self._timestamp()
         return {
