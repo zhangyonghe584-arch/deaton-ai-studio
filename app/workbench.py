@@ -218,7 +218,7 @@ class WorkbenchPage(QWidget):
         options = self.store.options()
         self.model_catalog = self.store.model_options()
         sections = {
-            "车辆信息": {"brand", "model", "year", "mileage", "continent_region", "country", "location"},
+            "车辆信息": {"brand", "model", "year", "mileage", "location"},
             "客户问题与诊断": {"customer_issue", "fault_category", "dtc_codes", "diagnosis"},
             "已完成的远程服务": {"service", "programming", "programming_detail", "equipment"},
             "修复结果与验证": {"result", "final_status", "verification"},
@@ -244,8 +244,6 @@ class WorkbenchPage(QWidget):
             combo.editTextChanged.connect(self._save_information)
             if key == "brand":
                 combo.currentTextChanged.connect(self._brand_changed)
-            if key == "continent_region":
-                combo.currentTextChanged.connect(self._region_changed)
             self.fields[key] = combo
             form.addRow(f"{label}", combo)
         layout.addWidget(note)
@@ -263,9 +261,7 @@ class WorkbenchPage(QWidget):
             "model": "请选择或输入车型",
             "year": "请选择或输入年份",
             "mileage": "例如：69664 km",
-            "continent_region": "请选择地区，例如：Europe / 欧洲",
-            "country": "请选择与地区对应的国家",
-            "location": "旧案例地区（可留空）",
+            "location": "请选择国家 + 省份 / 州 / 地区，例如：United States / Alaska / 美国 / 阿拉斯加",
             "customer_issue": "例如：客户反馈自适应巡航无法使用",
             "fault_category": "请选择主要故障类别",
             "diagnosis": "例如：扫描发现模块编码和组件保护异常",
@@ -355,18 +351,6 @@ class WorkbenchPage(QWidget):
         model_combo.setCurrentText(previous if previous in self.model_catalog.get(brand, []) else "")
         model_combo.blockSignals(False)
 
-    def _region_changed(self, region: str):
-        country_combo = self.fields.get("country")
-        if not country_combo:
-            return
-        catalog = self.store.country_options().get(region, [])
-        previous = country_combo.currentText()
-        country_combo.blockSignals(True)
-        country_combo.clear()
-        country_combo.addItems(catalog)
-        country_combo.setCurrentText(previous if previous in catalog else "")
-        country_combo.blockSignals(False)
-
     def _change_save_path(self):
         current = self.manifest.get("generation", {}).get("save_path", "")
         destination = QFileDialog.getExistingDirectory(self, "选择默认保存文件夹", current or str(Path.home()))
@@ -389,7 +373,6 @@ class WorkbenchPage(QWidget):
             combo.setCurrentText(self.manifest["information"].get(key, ""))
             combo.blockSignals(False)
         self._brand_changed(self.fields["brand"].currentText())
-        self._region_changed(self.fields["continent_region"].currentText())
         self.plan_editor.blockSignals(True)
         self.plan_editor.setPlainText(self.manifest["ai_plan"].get("content", ""))
         self.plan_editor.blockSignals(False)
@@ -566,3 +549,4 @@ class ApplicationWindow(QMainWindow):
             page.findChild(QFrame, "panel").layout().addWidget(api_button)
         except (FileNotFoundError, ValueError) as error:
             QMessageBox.warning(self, "无法打开案例", str(error))
+
