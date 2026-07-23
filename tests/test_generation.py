@@ -12,6 +12,13 @@ from core.generation import LocalGenerationService
 
 
 class LocalGenerationTests(unittest.TestCase):
+    def test_generation_requires_a_confirmed_local_plan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = CaseStore(Path(directory) / "cases")
+            case_dir = store.create("Needs plan")
+            with self.assertRaises(ValueError):
+                LocalGenerationService(store).generate(case_dir)
+
     def test_local_script_generates_five_portrait_preview_images(self):
         with tempfile.TemporaryDirectory() as directory:
             store = CaseStore(Path(directory) / "cases")
@@ -34,6 +41,7 @@ class LocalGenerationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             store = CaseStore(Path(directory) / "cases")
             case_dir = store.create("CLI output")
+            store.set_ai_plan(case_dir, "TITLE\nCLI CASE", True)
             parameter_file = store.write_generation_parameters(case_dir)
             script = Path(__file__).resolve().parents[1] / "scripts" / "generate_case.py"
 

@@ -20,5 +20,16 @@ class OpenAIPlanServiceTests(unittest.TestCase):
     def test_prompt_limits_scope_to_explicit_case_facts(self):
         prompt = OpenAIPlanService._prompt({"brand": "BMW", "fault_category": "ECU"}, 2)
 
-        self.assertIn("2 explicitly selected reference images", prompt)
+        self.assertIn("2 explicitly selected case images", prompt)
         self.assertIn("Do not infer", prompt)
+
+    def test_prompt_allows_one_to_five_source_images(self):
+        prompt = OpenAIPlanService._prompt({}, 1)
+        self.assertIn("One to five case images are valid", prompt)
+        self.assertIn("not a final answer", prompt)
+
+    def test_prompt_preserves_logo_and_five_output_rules(self):
+        prompt = OpenAIPlanService._prompt({}, 5, True, "keep source photos centered")
+        self.assertIn("official logo reference", prompt)
+        self.assertIn("exactly five output images", prompt)
+        self.assertIn("step labels", prompt)
