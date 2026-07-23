@@ -1,5 +1,9 @@
 .venv/
 __pycache__/
 *.pyc
+.agents_tmp/
 projects/
 *.log
+build/
+dist/
+*.spec
