@@ -60,7 +60,7 @@ def header(canvas: Image.Image, logo: Image.Image | None, page: str, index: int)
         canvas.alpha_composite(logo, (62, 30))
     else:
         text(draw, (64, 58), "DEATON AUTO", 32, BLUE, True)
-    text(draw, (1016, 62), f"{index:02d} / 06", 20, BLUE, True, "ra")
+    text(draw, (1016, 62), f"{index:02d} / 05", 20, BLUE, True, "ra")
     text(draw, (1016, 96), page, 15, "#697176", True, "ra")
 
 
@@ -116,32 +116,6 @@ def detail_page(data, assets, logo, slot, title, section, index):
     return canvas
 
 
-def plan_page(data, assets, logo):
-    canvas = Image.new("RGBA", (W, H), PAPER)
-    header(canvas, logo, "PRODUCTION PLAN", 6)
-    draw = ImageDraw.Draw(canvas)
-    text(draw, (64, 260), "CONFIRMED CASE PLAN", 20, ORANGE, True)
-    text(draw, (64, 318), "IMAGE STORYBOARD", 58, BLUE, True)
-    draw.line((64, 415, 1016, 415), fill=ORANGE, width=5)
-    plan = data.get("ai_plan", {}).get("content", "") or "No AI plan confirmed. Local layout uses supplied case information."
-    lines = []
-    for raw_line in plan.splitlines():
-        raw_line = raw_line.strip("• -\t")
-        if raw_line:
-            while len(raw_line) > 55:
-                split_at = raw_line.rfind(" ", 0, 55)
-                split_at = split_at if split_at > 0 else 55
-                lines.append(raw_line[:split_at])
-                raw_line = raw_line[split_at:].strip()
-            lines.append(raw_line)
-    y = 500
-    for line in lines[:14]:
-        text(draw, (82, y), line, 28, INK, False)
-        y += 78
-    footer(canvas)
-    return canvas
-
-
 def generate(parameters: Path) -> list[Path]:
     payload = json.loads(parameters.read_text(encoding="utf-8"))
     case_dir = Path(payload["case_dir"])
@@ -157,7 +131,6 @@ def generate(parameters: Path) -> list[Path]:
         ("03_diagnosis.png", detail_page(data, assets, logo, "diagnosis", "DIAGNOSIS", "ANALYSIS", 3)),
         ("04_programming.png", detail_page(data, assets, logo, "programming", "PROGRAMMING", "REMOTE PROCEDURE", 4)),
         ("05_result.png", detail_page(data, assets, logo, "result", "COMPLETED", "FINAL RESULT", 5)),
-        ("06_plan.png", plan_page(data, assets, logo)),
     ]
     paths = []
     for filename, image in pages:

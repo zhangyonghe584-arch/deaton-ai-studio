@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QPlainTextEdit,
     QScrollArea,
+    QSizePolicy,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -60,11 +61,12 @@ class SlotCard(QFrame):
         self.key = key
         self.setObjectName("slot")
         self.setAcceptDrops(True)
-        self.setMinimumSize(235, 185)
+        self.setMinimumSize(235, 215)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(12, 12, 12, 12)
         self.image = QLabel(alignment=Qt.AlignCenter)
-        self.image.setMinimumHeight(120)
+        self.image.setFixedHeight(135)
         self.image.setStyleSheet("background: #EEF0EE; border-radius: 7px; color: #7A8389;")
         self.caption = QLabel(label)
         self.caption.setStyleSheet("font-weight: 700; color: #283641;")
@@ -108,59 +110,7 @@ class SlotCard(QFrame):
             event.acceptProposedAction()
 
 
-class HomePage(QWidget):
-    create_requested = Signal(str)
-    open_requested = Signal(Path)
-
-    def __init__(self):
-        super().__init__()
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(70, 70, 70, 70)
-        layout.addStretch(1)
-        kicker = QLabel("DEATON AUTO · LOCAL IMAGE CASE STUDIO")
-        kicker.setObjectName("kicker")
-        title = QLabel("把一次专业处理，\n整理成一组清晰的案例图片。")
-        title.setObjectName("title")
-        title.setStyleSheet("font-size: 38px;")
-        subtitle = QLabel("本地保存素材与案例信息。仅当你主动点击分析时，才会向 OpenAI 发送所选的压缩图片。")
-        subtitle.setObjectName("subtitle")
-        subtitle.setWordWrap(True)
-        card = QFrame(objectName="panel")
-        card.setMaximumWidth(590)
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(28, 28, 28, 28)
-        card_layout.addWidget(QLabel("新建案例", objectName="title"))
-        self.title_input = QLineEdit(placeholderText="例如：BMW G20 ECU Programming")
-        self.title_input.returnPressed.connect(self._create)
-        create_button = QPushButton("新建并进入工作台")
-        create_button.clicked.connect(self._create)
-        open_button = QPushButton("打开已有案例")
-        open_button.setObjectName("secondary")
-        open_button.clicked.connect(self._open)
-        card_layout.addWidget(self.title_input)
-        card_layout.addWidget(create_button)
-        card_layout.addWidget(open_button)
-        layout.addWidget(kicker)
-        layout.addSpacing(12)
-        layout.addWidget(title)
-        layout.addSpacing(12)
-        layout.addWidget(subtitle)
-        layout.addSpacing(34)
-        layout.addWidget(card)
-        layout.addStretch(2)
-
-    def _create(self):
-        self.create_requested.emit(self.title_input.text())
-
-    def _open(self):
-        directory = QFileDialog.getExistingDirectory(self, "打开 Deaton 案例")
-        if directory:
-            self.open_requested.emit(Path(directory))
-
-
 class WorkbenchPage(QWidget):
-    home_requested = Signal()
-
     def __init__(self, store: CaseStore, case_dir: Path):
         super().__init__()
         self.store = store
@@ -192,9 +142,6 @@ class WorkbenchPage(QWidget):
             self.step_group.addButton(button, index)
             sidebar_layout.addWidget(button)
         sidebar_layout.addStretch()
-        home_button = QPushButton("返回首页", objectName="secondary")
-        home_button.clicked.connect(self.home_requested)
-        sidebar_layout.addWidget(home_button)
         root.addWidget(sidebar)
         main = QVBoxLayout()
         self.case_label = QLabel()
@@ -221,6 +168,8 @@ class WorkbenchPage(QWidget):
         layout.addWidget(instruction)
         grid = QGridLayout()
         grid.setSpacing(14)
+        for column in range(3):
+            grid.setColumnStretch(column, 1)
         for index, (key, label) in enumerate(SLOT_SPECS):
             card = SlotCard(key, label)
             card.asset_dropped.connect(self._set_asset)
@@ -285,12 +234,12 @@ class WorkbenchPage(QWidget):
     def _generation_page(self):
         page = QWidget()
         layout = QVBoxLayout(page)
-        note = QLabel("生成使用本机 Pillow 脚本，并将案例信息、素材路径和已确认方案写入参数文件。输出始终保留在案例自己的 output 文件夹。")
+        note = QLabel("生成使用本机 Pillow 脚本，最终输出 5 张 1080×1920 图片。")
         note.setObjectName("subtitle")
         actions = QHBoxLayout()
         self.generate_button = QPushButton("本地生成预览")
         self.generate_button.clicked.connect(self._generate)
-        save_button = QPushButton("另存到文件夹", objectName="secondary")
+        save_button = QPushButton("保存", objectName="secondary")
         save_button.clicked.connect(self._save_output)
         actions.addWidget(self.generate_button)
         actions.addWidget(save_button)
@@ -381,9 +330,12 @@ class WorkbenchPage(QWidget):
                 self.preview_layout.addWidget(label, index // 3, index % 3)
 
     def _save_output(self):
-        destination = QFileDialog.getExistingDirectory(self, "选择保存成品的文件夹")
+        destination = self.manifest.get("generation", {}).get("save_path", "")
         if not destination:
-            return
+            destination = QFileDialog.getExistingDirectory(self, "选择保存成品的文件夹")
+            if not destination:
+                return
+            self.manifest = self.store.set_save_path(self.case_dir, destination)
         copied = self.generator.copy_to(self.case_dir, destination)
         if copied:
             QMessageBox.information(self, "已保存", f"已保存 {len(copied)} 张图片到\n{destination}")
@@ -403,20 +355,10 @@ class ApplicationWindow(QMainWindow):
         self.setWindowTitle("Deaton Auto · Image Case Studio")
         self.resize(1280, 820)
         self.setStyleSheet(STYLE)
-        self.show_home()
-
-    def show_home(self):
-        home = HomePage()
-        home.create_requested.connect(self.create_case)
-        home.open_requested.connect(self.open_case)
-        self.setCentralWidget(home)
-
-    def create_case(self, title: str):
-        self.open_case(self.store.create(title))
+        self.open_case(self.store.create("新案例"))
 
     def open_case(self, case_dir: Path):
         try:
             self.setCentralWidget(WorkbenchPage(self.store, case_dir))
-            self.centralWidget().home_requested.connect(self.show_home)
         except (FileNotFoundError, ValueError) as error:
             QMessageBox.warning(self, "无法打开案例", str(error))

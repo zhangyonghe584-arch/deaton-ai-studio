@@ -59,6 +59,12 @@ class CaseStore:
         self.save(case_dir, manifest)
         return manifest
 
+    def set_save_path(self, case_dir: Path | str, save_path: Path | str) -> dict[str, Any]:
+        manifest = self.load(case_dir)
+        manifest.setdefault("generation", {})["save_path"] = str(Path(save_path).resolve())
+        self.save(case_dir, manifest)
+        return manifest
+
     def set_asset(self, case_dir: Path | str, slot: str, source: Path | str) -> dict[str, Any]:
         if slot not in dict(SLOT_SPECS):
             raise ValueError(f"Unknown asset slot: {slot}")
@@ -113,7 +119,7 @@ class CaseStore:
             "assets": {key: "" for key, _ in SLOT_SPECS},
             "information": {key: "" for key, _ in CASE_FIELDS},
             "ai_plan": {"content": "", "confirmed": False, "updated_at": ""},
-            "generation": {"preview_files": [], "last_generated_at": ""},
+            "generation": {"preview_files": [], "last_generated_at": "", "save_path": ""},
         }
 
     def _available_case_dir(self, slug: str) -> Path:
