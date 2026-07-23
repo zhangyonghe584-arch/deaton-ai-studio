@@ -7,28 +7,28 @@ PROJECTS_DIR = Path(os.getenv("DEATON_PROJECTS_DIR", Path.home() / "Documents" /
 DEFAULT_LOGO = RESOURCE_DIR / "resources" / "branding" / "deaton_auto_logo.png"
 
 SLOT_SPECS = (
-    ("vehicle", "车辆外观 / Vehicle Exterior"),
-    ("fault", "仪表 / 故障部件 / Fault Evidence"),
-    ("diagnosis", "分析诊断 / Diagnosis"),
-    ("programming", "编程流程 / Programming"),
-    ("result", "修复完成 / Completed Result"),
-    ("logo", "官方标志 / Official Logo"),
+    ("vehicle", "车辆外观"),
+    ("fault", "仪表 / 故障部件"),
+    ("diagnosis", "诊断过程"),
+    ("programming", "编程过程"),
+    ("result", "修复完成"),
+    ("logo", "官方 Logo"),
 )
 
 CASE_FIELDS = (
-    ("brand", "车辆品牌 / Vehicle Brand"),
-    ("model", "车型 / Vehicle Model"),
-    ("year", "年份 / Model Year"),
-    ("mileage", "里程 / Mileage"),
-    ("location", "车辆地区 / Vehicle Location"),
-    ("customer_issue", "客户问题 / Customer Concern"),
-    ("fault_category", "故障类别 / Fault Category"),
-    ("diagnosis", "诊断发现 / Diagnosis Findings"),
-    ("service", "服务项目 / Service Performed"),
-    ("programming", "编程处理 / Programming Work"),
-    ("programming_detail", "处理过程 / Procedure Details"),
-    ("result", "最终结果 / Final Result"),
-    ("final_status", "最终状态 / Final Status"),
+    ("brand", "车辆品牌"),
+    ("model", "车型"),
+    ("year", "年份"),
+    ("mileage", "里程"),
+    ("location", "车辆地区"),
+    ("customer_issue", "客户问题"),
+    ("fault_category", "故障类别"),
+    ("diagnosis", "诊断发现"),
+    ("service", "服务项目"),
+    ("programming", "编程处理"),
+    ("programming_detail", "处理过程"),
+    ("result", "最终结果"),
+    ("final_status", "最终状态"),
 )
 
 DEFAULT_OPTIONS = {
