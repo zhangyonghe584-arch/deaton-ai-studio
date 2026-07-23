@@ -191,7 +191,7 @@ class WorkbenchPage(QWidget):
     def _asset_page(self):
         page = QWidget()
         layout = QVBoxLayout(page)
-        instruction = QLabel("固定六槽位 / Six fixed slots；每格至多一张图片 / one image per slot。空槽位不阻止生成 / Empty slots are allowed。")
+        instruction = QLabel("固定 6 个素材位置，每个位置放 1 张图片即可；没有图片的位置可以留空。")
         instruction.setObjectName("subtitle")
         layout.addWidget(instruction)
         grid = QGridLayout()
@@ -210,7 +210,7 @@ class WorkbenchPage(QWidget):
     def _info_page(self):
         page = QWidget()
         layout = QVBoxLayout(page)
-        note = QLabel("案例字段中英文并列显示，可留空或直接输入；车型选项会随品牌自动切换，也支持手动输入。 / Bilingual case fields; models update by brand and remain editable。")
+        note = QLabel("填写中文即可。下拉选项统一显示为“英文 / 中文”，生成图片时会自动整理为英文；没有合适选项时可以直接输入。")
         note.setObjectName("subtitle")
         card = QFrame(objectName="panel")
         form = QFormLayout(card)
@@ -219,6 +219,7 @@ class WorkbenchPage(QWidget):
         self.model_catalog = self.store.model_options()
         for key, label in CASE_FIELDS:
             combo = VisibleArrowComboBox(editable=True)
+            combo.setPlaceholderText(self._field_placeholder(key))
             if key != "model":
                 combo.addItems(options.get(key, []))
             combo.setInsertPolicy(QComboBox.NoInsert)
@@ -238,16 +239,30 @@ class WorkbenchPage(QWidget):
         layout.addStretch()
         return page
 
+    @staticmethod
+    def _field_placeholder(key: str) -> str:
+        return {
+            "brand": "请选择或输入品牌",
+            "model": "请选择或输入车型",
+            "year": "请选择或输入年份",
+            "mileage": "例如：69664 km",
+            "location": "例如：中国 / 美国 / 英国",
+            "customer_issue": "请选择或输入客户遇到的问题",
+            "diagnosis": "请选择或输入诊断发现",
+            "programming_detail": "请选择或输入具体处理过程",
+            "final_status": "请选择或输入最终状态",
+        }.get(key, "请选择或输入")
+
     def _ai_page(self):
         page = QWidget()
         layout = QVBoxLayout(page)
-        warning = QLabel("仅在点击时调用 OpenAI：已有 1–5 张案例图都可以分析，Logo 会一并作为参考，并自动带入本机项目记忆。AI方案会保存到本地，再由代码执行生成 5 张成品。")
+        warning = QLabel("只有点击按钮后才会调用 AI：已有 1–5 张案例图都可以分析，Logo 会一并作为参考。AI 方案会保存到本地，再由程序生成 5 张成品。")
         warning.setObjectName("subtitle")
         layout.addWidget(warning)
         selector = QFrame(objectName="panel")
         selector_layout = QVBoxLayout(selector)
         selector_layout.setContentsMargins(20, 20, 20, 20)
-        selector_layout.addWidget(QLabel("勾选已有的案例图片（至少 1 张，最多 5 张；Logo 会自动一并发送）"))
+        selector_layout.addWidget(QLabel("勾选要交给 AI 分析的案例图片（1–5 张；Logo 会自动一并分析）"))
         self.ai_checks: dict[str, QCheckBox] = {}
         for key, label in SLOT_SPECS:
             if key != "logo":
@@ -255,7 +270,7 @@ class WorkbenchPage(QWidget):
                 check.setChecked(True)
                 self.ai_checks[key] = check
                 selector_layout.addWidget(check)
-        self.analyze_button = QPushButton("分析所选图片和Logo，生成方案")
+        self.analyze_button = QPushButton("分析图片和案例信息")
         self.analyze_button.clicked.connect(self._analyze)
         selector_layout.addWidget(self.analyze_button)
         self.plan_editor = QPlainTextEdit(placeholderText="分析方案会显示在这里。你可以自行修改，再确认用于本地生成。")
@@ -264,8 +279,9 @@ class WorkbenchPage(QWidget):
         self.confirm_plan.toggled.connect(self._plan_changed)
         layout.addWidget(selector)
         layout.addSpacing(12)
-        layout.addWidget(QLabel("可编辑方案", objectName="title"))
+        layout.addWidget(QLabel("AI 方案（可以修改）", objectName="title"))
         layout.addWidget(self.plan_editor, 1)
+        self.confirm_plan.setText("确认使用这份方案生成图片")
         layout.addWidget(self.confirm_plan)
         return page
 
