@@ -49,7 +49,14 @@
   "programming": ["ECU Programming / ECU 编程", "Module Coding / 模块编码", "Parameterization / 参数化", "Component Protection / 组件保护", "Key Programming / 钥匙编程", "Adaptation and Learning / 匹配与学习", "Calibration / 校准", "Software Update / 软件升级", "Configuration / 配置设定", "Online Programming / 在线编程"],
   "programming_detail": ["Scan and identify faults / 扫描并确认故障", "Read diagnostic trouble codes / 读取故障码", "Check power and communication / 检查电源和通讯", "Code or program replacement module / 编码或编程更换模块", "Remove component protection / 处理组件保护", "Perform adaptation and learning / 执行匹配与学习", "Clear faults and verify operation / 清除故障并验证功能", "Complete final diagnostic scan / 完成最终诊断扫描"],
   "result": ["Programming Completed / 编程完成", "Coding Completed / 编码完成", "Function Restored / 功能恢复", "Vehicle Started / 车辆启动", "Fault Cleared / 故障清除", "System Activated / 系统激活", "Adaptation Completed / 匹配完成", "No Critical Faults / 无严重故障", "Repair Verified / 修复已验证"],
-  "final_status": ["Completed Successfully / 成功完成", "Function Restored / 功能恢复", "Vehicle Ready / 车辆可以正常使用", "Needs Further Diagnosis / 需要进一步诊断", "Awaiting Parts / 等待配件", "Customer Confirmed / 客户已确认", "Partially Resolved / 部分解决"],
+  "final_status": ["Completed Successfully / 成功完成", "Function Restored / 功能恢复", "Vehicle Ready / 车辆可以正常使用", "Needs Further Diagnosis / 需要进一步诊断", "Awaiting Parts / 等待配件", "Customer Confirmed / 客户已确认", "Partially Resolved / 部分解决", "Repair Completed Remotely / 已远程完成维修", "Follow-up Recommended / 建议后续跟进"],
+  "vehicle_condition": ["Vehicle Drives Normally / 车辆可以正常行驶", "Vehicle Cannot Start / 车辆无法启动", "Vehicle In Safe Mode / 车辆进入保护模式", "Warning Light On / 仪表亮故障灯", "Function Intermittent / 功能偶发失效", "Module Recently Replaced / 模块刚更换", "Vehicle Requires Further Inspection / 车辆需要进一步检查"],
+  "dtc_codes": ["Communication DTCs / 通讯类故障码", "Coding or Configuration DTCs / 编码或配置故障码", "Component Protection Active / 组件保护激活", "Activation Code Error / 激活码错误", "No Communication With Module / 无法与模块通讯", "Low Voltage Related Fault / 低电压相关故障", "Intermittent Fault / 间歇性故障", "DTCs Cleared After Repair / 修复后故障码已清除"],
+  "equipment": ["OEM Diagnostic Tool / 原厂诊断设备", "ODIS / ODIS 诊断系统", "ISTA / ISTA 诊断系统", "Xentry / Xentry 诊断系统", "VCDS or VAG Diagnostic Tool / VCDS或大众诊断设备", "BMW ICOM / 宝马ICOM", "VAS6154 / VAS6154", "J2534 Pass-Thru / J2534设备", "Battery Support Unit / 稳压电源设备"],
+  "power_voltage": ["Voltage Stable / 供电稳定", "Approximately 13.5 V / 约13.5伏", "Battery Support Connected / 已连接稳压电源", "Communication Stable / 通讯稳定", "Voltage Checked Before Programming / 编程前已检查电压", "Voltage Issue Detected / 发现电压问题"],
+  "remote_method": ["Remote Diagnostic Session / 远程诊断会话", "Remote Coding Session / 远程编码会话", "Remote Programming Session / 远程编程会话", "Online OEM Procedure / 原厂在线流程", "Module Replacement Support / 模块更换支持", "Guided Customer Operation / 远程指导客户操作"],
+  "verification": ["Final Scan Completed / 已完成最终扫描", "No Active Critical Faults / 无活动严重故障", "Function Test Passed / 功能测试通过", "System Learned Successfully / 系统学习成功", "Warning Light Off / 故障灯熄灭", "Vehicle Road Test Recommended / 建议进行路试", "Further Verification Required / 需要进一步验证"],
+  "customer_confirmation": ["Customer Confirmed Repair / 客户确认修复完成", "Customer Confirmed Function Restored / 客户确认功能恢复", "Vehicle Returned To Service / 车辆恢复使用", "Customer Received Remote Guidance / 客户已接受远程指导", "Pending Customer Confirmation / 等待客户确认"],
   "models_by_brand": {
     "BMW / 宝马": ["1 Series / 1系", "2 Series / 2系", "3 Series / 3系", "4 Series / 4系", "5 Series / 5系", "7 Series / 7系", "X1", "X3", "X5", "X6", "X7", "i3", "i4", "i5", "i7", "iX"],
     "Mercedes-Benz / 奔驰": ["A-Class / A级", "C-Class / C级", "E-Class / E级", "S-Class / S级", "CLA", "GLA", "GLB", "GLC", "GLE", "GLS", "G-Class / G级", "EQA", "EQB", "EQE", "EQS"],
@@ -93,3 +100,4 @@
     "Maserati / 玛莎拉蒂": ["Ghibli / 吉博力", "Quattroporte / 总裁", "Levante / 莱凡特", "Grecale / Grecale", "MC20 / MC20"]
   }
 }
+
