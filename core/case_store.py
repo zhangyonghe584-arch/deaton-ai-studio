@@ -161,4 +161,3 @@ class CaseStore:
         temporary_path = case_dir / f".{self.manifest_name}.tmp"
         temporary_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
         temporary_path.replace(case_dir / self.manifest_name)
-
