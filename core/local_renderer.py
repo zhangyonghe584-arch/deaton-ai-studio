@@ -215,4 +215,3 @@ if __name__ == "__main__":
     parameter_file = Path(sys.argv[1]).resolve()
     paths = generate(parameter_file)
     print(json.dumps({"files": [str(path) for path in paths], "generated_at": datetime.now(timezone.utc).isoformat()}))
-

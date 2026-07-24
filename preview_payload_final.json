@@ -1,0 +1,32 @@
+{
+  "case_dir": "/workspace/scratch/0b6fec13ecc7/repo/preview/final",
+  "information": {
+    "brand": "BMW",
+    "model": "5 Series",
+    "year": "",
+    "mileage": "",
+    "location": "Worldwide Remote Service",
+    "service": "Remote ECU Programming",
+    "customer_issue": "Vehicle communication and module programming fault",
+    "fault_category": "Communication Fault",
+    "dtc_codes": "Diagnostic fault detected",
+    "diagnosis": "Module communication and coding issue identified",
+    "equipment": "OEM Diagnostic Equipment",
+    "programming": "ECU coding and module adaptation completed",
+    "programming_detail": "Remote programming performed and configuration restored",
+    "result": "Repair completed successfully",
+    "verification": "Functions tested and verified",
+    "contact": "",
+    "website": "",
+    "final_result": "Repair completed successfully",
+    "service_performed": "Remote ECU Programming"
+  },
+  "assets": {
+    "logo": "/workspace/scratch/0b6fec13ecc7/repo/resources/branding/deaton_auto_logo.png",
+    "vehicle": "/workspace/scratch/0b6fec13ecc7/repo/sucai/宝马/01_案例封面/IMG-20260610-WA0062.jpg",
+    "fault": "/workspace/scratch/0b6fec13ecc7/repo/sucai/宝马/02_车辆故障/IMG-20260609-WA0247.jpg",
+    "diagnosis": "/workspace/scratch/0b6fec13ecc7/repo/sucai/宝马/03_诊断过程/IMG-20260605-WA0048.jpg",
+    "programming": "/workspace/scratch/0b6fec13ecc7/repo/sucai/宝马/04_编程过程/IMG-20260605-WA0048.jpg",
+    "result": "/workspace/scratch/0b6fec13ecc7/repo/sucai/宝马/05_完成结果/IMG-20260605-WA0048.jpg"
+  }
+}
