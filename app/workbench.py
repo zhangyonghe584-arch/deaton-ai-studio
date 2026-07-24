@@ -221,13 +221,15 @@ class WorkbenchPage(QWidget):
             "车辆信息": {"brand", "model", "year", "mileage", "location"},
             "客户问题与诊断": {"customer_issue", "fault_category", "dtc_codes", "diagnosis"},
             "已完成的远程服务": {"service", "programming", "programming_detail", "equipment"},
-            "修复结果与验证": {"result", "final_status", "verification"},
+            "修复结果与验证": {"result", "final_status", "verification", "contact", "website"},
         }
         section_for = {key: title for title, keys in sections.items() for key in keys}
         current_section = ""
         for key, label in CASE_FIELDS:
-            if section_for[key] != current_section:
-                current_section = section_for[key]
+            # 使用安全回退，避免以后新增字段忘记加入分组时导致程序启动崩溃。
+            section = section_for.get(key, "其他案例信息")
+            if section != current_section:
+                current_section = section
                 heading = QLabel(current_section)
                 heading.setStyleSheet("font-size: 16px; font-weight: 700; color: #123B68; padding-top: 12px;")
                 form.addRow(heading)
@@ -568,4 +570,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
