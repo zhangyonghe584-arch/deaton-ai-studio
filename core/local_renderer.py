@@ -114,15 +114,14 @@ def text_lines(value, typeface, width):
     return lines or [value]
 
 
-def header(canvas: Image.Image, logo: Image.Image | None, page: str, index: int):
+def header(canvas: Image.Image, logo: Image.Image | None):
     draw = ImageDraw.Draw(canvas)
     draw.rectangle((0, 0, W, 160), fill=PAPER)
     draw.rectangle((0, 154, W, 160), fill=ORANGE)
     if logo:
         canvas.alpha_composite(logo, (62, 30))
-    # The top-left area is reserved for the supplied logo only.
-    text(draw, (1016, 62), f"CASE {index:02d} / 05", 20, BLUE, True, "ra")
-    text(draw, (1016, 96), page, 15, "#697176", True, "ra")
+    # The header is intentionally logo-only. Do not add case IDs, page numbers,
+    # STEP labels, or placeholder digits to published case artwork.
 
 
 def footer(canvas: Image.Image):
@@ -137,7 +136,7 @@ def cover(data, assets, logo):
     shade_draw = ImageDraw.Draw(shade)
     shade_draw.rectangle((0, 920, W, H), fill=(9, 23, 38, 220))
     canvas = Image.alpha_composite(photo, shade)
-    header(canvas, logo, "CASE OVERVIEW", 1)
+    header(canvas, logo)
     draw = ImageDraw.Draw(canvas)
     text(draw, (64, 1045), "REMOTE PROGRAMMING CASE", 20, "#DDE8F3", True)
     brand = supplied(data, "brand") or "VEHICLE"
@@ -153,9 +152,9 @@ def cover(data, assets, logo):
     return canvas
 
 
-def detail_page(data, assets, logo, slot, title, section, index):
+def detail_page(data, assets, logo, slot, title, section):
     canvas = Image.new("RGBA", (W, H), PAPER)
-    header(canvas, logo, title, index)
+    header(canvas, logo)
     photo = open_image(assets.get(slot, ""), (952, 690), section)
     canvas.alpha_composite(photo.convert("RGBA"), (64, 220))
     draw = ImageDraw.Draw(canvas)
@@ -184,10 +183,10 @@ def generate(parameters: Path) -> list[Path]:
     logo = logo_image(assets.get("logo", ""))
     pages = [
         ("01_case_overview.png", cover(data, assets, logo)),
-        ("02_vehicle_fault.png", detail_page(data, assets, logo, "fault", "VEHICLE FAULT", "REPORTED ISSUE", 2)),
-        ("03_diagnosis.png", detail_page(data, assets, logo, "diagnosis", "DIAGNOSIS", "ANALYSIS", 3)),
-        ("04_programming.png", detail_page(data, assets, logo, "programming", "PROGRAMMING", "REMOTE PROCEDURE", 4)),
-        ("05_result.png", detail_page(data, assets, logo, "result", "COMPLETED", "FINAL RESULT", 5)),
+        ("02_vehicle_fault.png", detail_page(data, assets, logo, "fault", "VEHICLE FAULT", "REPORTED ISSUE")),
+        ("03_diagnosis.png", detail_page(data, assets, logo, "diagnosis", "DIAGNOSIS", "ANALYSIS")),
+        ("04_programming.png", detail_page(data, assets, logo, "programming", "PROGRAMMING", "REMOTE PROCEDURE")),
+        ("05_result.png", detail_page(data, assets, logo, "result", "COMPLETED", "FINAL RESULT")),
     ]
     paths = []
     for filename, image in pages:
