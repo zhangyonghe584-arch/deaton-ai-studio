@@ -24,7 +24,15 @@ def english(value, fallback="CASE UPDATE"):
     published artwork must never receive raw non-English case text.
     """
     value = str(value or "").strip()
-    if not value or CJK.search(value):
+    if not value:
+        return fallback
+    # Bilingual UI values are stored as "English / 中文".  Published artwork
+    # uses only the English side; custom Chinese-only input uses the fallback.
+    if "/" in value:
+        candidate = value.split("/", 1)[0].strip()
+        if candidate and not CJK.search(candidate):
+            return candidate
+    if CJK.search(value):
         return fallback
     return value
 
@@ -66,6 +74,46 @@ def text(draw: ImageDraw.ImageDraw, position, value: str, size: int, color=INK, 
     draw.text(position, english(value).upper(), font=font(size, bold), fill=color, anchor=anchor)
 
 
+def supplied(data, key: str) -> str:
+    """Return a field only when the user supplied it; empty fields render nothing."""
+    raw = str(data.get(key, "") or "").strip()
+    return english(raw, "") if raw else ""
+
+
+def draw_field_list(draw, data, fields, start_y, max_width=900):
+    """Draw compact optional fields and return the next free y position."""
+    y = start_y
+    visible = [(label, supplied(data, key)) for key, label in fields]
+    visible = [(label, value) for label, value in visible if value]
+    if not visible:
+        return y
+    # More content gets a smaller type size and tighter spacing automatically.
+    value_size = 28 if len(visible) <= 3 else 24 if len(visible) <= 5 else 21
+    for label, value in visible:
+        lines = text_lines(value, font(value_size, True), max_width - 70)
+        text(draw, (70, y), label, 15, ORANGE, True)
+        for line in lines[:2]:
+            text(draw, (70, y + 30), line, value_size, INK, True)
+            y += value_size + 8
+        y += 24
+    return y
+
+
+def text_lines(value, typeface, width):
+    words = value.split()
+    lines, current = [], ""
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if current and typeface.getlength(candidate) > width:
+            lines.append(current)
+            current = word
+        else:
+            current = candidate
+    if current:
+        lines.append(current)
+    return lines or [value]
+
+
 def header(canvas: Image.Image, logo: Image.Image | None, page: str, index: int):
     draw = ImageDraw.Draw(canvas)
     draw.rectangle((0, 0, W, 160), fill=PAPER)
@@ -92,13 +140,16 @@ def cover(data, assets, logo):
     header(canvas, logo, "CASE OVERVIEW", 1)
     draw = ImageDraw.Draw(canvas)
     text(draw, (64, 1045), "REMOTE PROGRAMMING CASE", 20, "#DDE8F3", True)
-    text(draw, (64, 1100), english(data.get("brand"), "VEHICLE"), 36, PAPER, True)
-    text(draw, (60, 1155), english(data.get("model"), "REMOTE SERVICE"), 78, PAPER, True)
+    brand = supplied(data, "brand") or "VEHICLE"
+    model = supplied(data, "model") or "REMOTE SERVICE"
+    text(draw, (64, 1100), brand, 36, PAPER, True)
+    text(draw, (60, 1155), model, 78, PAPER, True)
     draw.rectangle((64, 1280, 510, 1287), fill=ORANGE)
-    text(draw, (64, 1320), english(data.get("service"), "REMOTE PROGRAMMING"), 34, PAPER, True)
-    text(draw, (64, 1382), f"{english(data.get('year'), 'VEHICLE')} · {english(data.get('fault_category'), 'TECHNICAL CASE')}", 23, "#DDE8F3")
-    text(draw, (64, 1570), "RESULT", 17, "#B3C9DC", True)
-    text(draw, (64, 1612), english(data.get("result"), "SERVICE COMPLETED"), 32, PAPER, True)
+    y = 1320
+    y = draw_field_list(draw, data, [("service", "SERVICE"), ("year", "YEAR"), ("mileage", "MILEAGE"), ("location", "LOCATION")], y, 900)
+    if supplied(data, "result"):
+        text(draw, (64, min(y + 35, 1570)), "RESULT", 17, "#B3C9DC", True)
+        text(draw, (64, min(y + 77, 1612)), supplied(data, "result"), 32, PAPER, True)
     return canvas
 
 
@@ -111,20 +162,13 @@ def detail_page(data, assets, logo, slot, title, section, index):
     text(draw, (64, 980), section, 18, ORANGE, True)
     text(draw, (64, 1030), title, 56, BLUE, True)
     draw.line((64, 1115, 1016, 1115), fill=ORANGE, width=5)
-    if slot == "fault":
-        values = [english(data.get("customer_issue"), "REPORTED ISSUE"), english(data.get("fault_category"), "SYSTEM FAULT"), english(data.get("model"), "VEHICLE")]
-    elif slot == "diagnosis":
-        values = ["Technical assessment", english(data.get("diagnosis"), "SYSTEM CHECK COMPLETED"), english(data.get("fault_category"), "SYSTEM FAULT")]
-    elif slot == "programming":
-        values = [english(data.get("programming"), "MODULE CODING"), english(data.get("programming_detail"), "CONTROLLED REMOTE PROCEDURE"), english(data.get("service"), "REMOTE PROGRAMMING")]
-    else:
-        values = [english(data.get("result"), "SERVICE COMPLETED"), english(data.get("final_status"), "FUNCTION VERIFIED"), "CASE COMPLETED"]
-    y = 1195
-    for number, value in enumerate(values, 1):
-        text(draw, (70, y), f"0{number}", 20, ORANGE, True)
-        text(draw, (150, y), value, 30, INK, True)
-        draw.line((64, y + 58, 1016, y + 58), fill="#D4D7D6", width=2)
-        y += 126
+    field_map = {
+        "fault": [("customer_issue", "CUSTOMER ISSUE"), ("fault_category", "FAULT CATEGORY"), ("dtc_codes", "FAULT CODES / SYMPTOMS"), ("model", "VEHICLE")],
+        "diagnosis": [("diagnosis", "DIAGNOSTIC FINDING"), ("fault_category", "FAULT CATEGORY"), ("equipment", "DIAGNOSTIC EQUIPMENT")],
+        "programming": [("service", "SERVICE COMPLETED"), ("programming", "PROGRAMMING WORK"), ("programming_detail", "PROCESS")],
+        "result": [("result", "RESULT"), ("final_status", "FINAL STATUS"), ("verification", "VERIFICATION"), ("contact", "CONTACT"), ("website", "WEBSITE")],
+    }
+    draw_field_list(draw, data, field_map.get(slot, []), 1195, 900)
     footer(canvas)
     return canvas
 
