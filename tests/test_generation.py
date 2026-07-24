@@ -68,4 +68,3 @@ class LocalGenerationTests(unittest.TestCase):
 
             self.assertEqual(len(output["files"]), 5)
             self.assertTrue(all(Path(path).is_file() for path in output["files"]))
-
