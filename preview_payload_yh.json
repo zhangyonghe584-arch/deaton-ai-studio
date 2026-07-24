@@ -1,0 +1,27 @@
+{
+  "case_dir": "/workspace/scratch/0b6fec13ecc7/repo/preview/final",
+  "information": {
+    "brand": "BMW / 宝马",
+    "model": "5 Series / 5系",
+    "year": "2021",
+    "location": "United States / California / 美国 / 加利福尼亚",
+    "service": "Remote Programming / 远程编程",
+    "customer_issue": "Communication fault / 通讯故障",
+    "fault_category": "Gateway / 网关模块",
+    "diagnosis": "Communication fault identified / 已确认通讯故障",
+    "equipment": "BMW ICOM / 宝马ICOM",
+    "programming": "Module Coding / 模块编码",
+    "programming_detail": "Check power and communication / 检查电源和通讯",
+    "result": "Function Restored / 功能恢复",
+    "verification": "Function Test Passed / 功能测试通过",
+    "final_status": "Completed Successfully / 成功完成"
+  },
+  "assets": {
+    "logo": "/workspace/scratch/0b6fec13ecc7/repo/resources/branding/deaton_auto_logo.png",
+    "vehicle": "/workspace/scratch/0b6fec13ecc7/repo/sucai/宝马/01_案例封面/IMG-20260610-WA0062.jpg",
+    "fault": "/workspace/scratch/0b6fec13ecc7/repo/sucai/宝马/02_车辆故障/IMG-20260609-WA0247.jpg",
+    "diagnosis": "/workspace/scratch/0b6fec13ecc7/repo/sucai/宝马/03_诊断过程/IMG-20260605-WA0048.jpg",
+    "programming": "/workspace/scratch/0b6fec13ecc7/repo/sucai/宝马/04_编程过程/IMG-20260605-WA0048.jpg",
+    "result": "/workspace/scratch/0b6fec13ecc7/repo/sucai/宝马/05_完成结果/IMG-20260605-WA0048.jpg"
+  }
+}
