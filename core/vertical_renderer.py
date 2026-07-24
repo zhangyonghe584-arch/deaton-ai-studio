@@ -42,15 +42,13 @@ def logo(path, max_size=(220, 74)):
     out.thumbnail(max_size, Image.Resampling.LANCZOS)
     return out
 
-def add_logo(c, path, x=64, y=44):
-    m = logo(path)
-    if m:
-        # Keep the master artwork intact, but place it inside a restrained
-        # brand capsule so it reads as part of the layout rather than a
-        # floating image in the margin.
-        m.thumbnail((150, 52), Image.Resampling.LANCZOS)
-        ImageDraw.Draw(c).rounded_rectangle((x-16, y-10, x+m.width+22, y+m.height+10), radius=18, fill='white')
-        c.alpha_composite(m, (x, y))
+def add_logo(c, path, x=64, y=42):
+    # The current personal-brand direction uses YH; do not reuse the legacy
+    # DA/Deaton Auto artwork in social case images.
+    d = ImageDraw.Draw(c)
+    d.rounded_rectangle((x-14, y-8, x+112, y+58), radius=18, fill=NAVY)
+    d.text((x+16, y+4), 'YH', font=f(34, True), fill='white')
+    d.rectangle((x+77, y+13, x+82, y+45), fill=CYAN)
 
 def wrap(draw, text, font, width):
     words = str(text).split(); lines=[]; line=''
@@ -100,72 +98,83 @@ def card(draw, xy, size, title, body, accent=BLUE):
 def make(data, assets, out):
     out.mkdir(parents=True, exist_ok=True)
     brand=value(data,'brand'); model=value(data,'model'); service=value(data,'service','service_performed')
-    # 1: text-led cover, with a restrained evidence strip
-    c=Image.new('RGBA',(W,H),PALE); d=ImageDraw.Draw(c); header(c,d,assets,'CASE STUDY')
-    d.rounded_rectangle((64,170,1016,790), radius=34, fill=NAVY)
-    d.rectangle((64,170,82,790), fill=CYAN)
-    d.text((112,220),brand.upper(),font=f(27,True),fill=CYAN)
-    txt(d,(112,275),model or 'REMOTE VEHICLE PROGRAMMING',70,'white',True,820,5)
-    txt(d,(112,455),service or 'Remote Automotive Engineering',34,'#DDEAF5',True,820,7)
-    d.line((112,560,920,560),fill='#2C526F',width=2)
-    txt(d,(112,605),'REMOTE PROGRAMMING\nCOMPLETED SUCCESSFULLY',39,'white',True,820,6)
-    d.text((112,748),value(data,'location') or 'WORLDWIDE REMOTE SERVICE',font=f(20,True),fill=CYAN)
-    photo_panel(c,assets.get('vehicle'),(64,850,952,380),28,True,'#A9C5DA')
-    d.rounded_rectangle((88,1060,560,1198),radius=20,fill='#081827DD')
-    d.text((120,1092),'REAL VEHICLE · SERVICE EVIDENCE',font=f(20,True),fill='white')
+    def full_photo(path, box=(0,0,W,H)):
+        x,y,w,h=box; im=image(path,(w,h),True).convert('RGBA'); c.alpha_composite(im,(x,y))
+    def shade(box, fill=(8,24,39,190), radius=0):
+        layer=Image.new('RGBA',(W,H),(0,0,0,0)); ld=ImageDraw.Draw(layer)
+        if radius: ld.rounded_rectangle(box,radius=radius,fill=fill)
+        else: ld.rectangle(box,fill=fill)
+        c.alpha_composite(layer)
+    def brand_mark(d, dark=False):
+        fill='white' if dark else NAVY; ink=NAVY if dark else 'white'
+        d.rounded_rectangle((54,42,174,106),radius=18,fill=fill)
+        d.text((78,52),'YH',font=f(30,True),fill=ink)
+        d.rectangle((142,56,147,92),fill=CYAN)
+    def slide_no(d, s, dark=False):
+        d.text((1018,61),s,font=f(17,True),fill=CYAN if dark else BLUE,anchor='ra')
+
+    # 1: full-bleed cover: the photo is the canvas, text sits in its dark space.
+    c=Image.new('RGBA',(W,H),NAVY); full_photo(assets.get('vehicle')); shade((0,0,W,600),(5,19,31,205)); shade((0,830,W,H),(5,19,31,220))
+    d=ImageDraw.Draw(c); brand_mark(d,True); slide_no(d,'CASE STUDY',True)
+    d.text((66,190),brand.upper() or 'BMW',font=f(28,True),fill=CYAN)
+    txt(d,(64,245),model or 'REMOTE VEHICLE\nPROGRAMMING',68,'white',True,850,3)
+    d.line((64,520,440,520),fill=CYAN,width=5)
+    txt(d,(64,900),service or 'Remote Programming',34,'white',True,850,6)
+    txt(d,(64,982),'REMOTE PROGRAMMING\nCOMPLETED SUCCESSFULLY',43,'white',True,900,4)
+    d.text((64,1190),value(data,'location') or 'WORLDWIDE REMOTE SERVICE',font=f(21,True),fill=CYAN)
     c.convert('RGB').save(out/'01_case_cover.png',quality=95)
 
-    # 2: problem page, text first, vertical photo as evidence
-    c=Image.new('RGBA',(W,H),PALE); d=ImageDraw.Draw(c); header(c,d,assets,'01 / CUSTOMER ISSUE')
-    txt(d,(64,178),'WHAT NEEDED\nTO BE SOLVED',58,NAVY,True,900,2)
-    d.rounded_rectangle((64,395,1016,710),radius=30,fill='white',outline='#D2E0EA',width=2)
-    d.rectangle((64,395,82,710),fill=BLUE)
-    d.text((112,438),'CUSTOMER ISSUE',font=f(19,True),fill=BLUE)
-    txt(d,(112,490),value(data,'customer_issue') or 'Vehicle communication and module programming fault',37,INK,True,830,8)
-    d.rounded_rectangle((64,760,490,890),radius=24,fill=BLUE)
-    d.text((98,795),'FAULT CATEGORY',font=f(18,True),fill='#BFEFFF')
-    txt(d,(98,830),value(data,'fault_category') or 'Communication Fault',28,'white',True,350,4)
-    photo_panel(c,assets.get('fault'),(540,760,476,480),26,True,'#A9C5DA')
+    # 2: issue page: image is dominant, issue label is anchored to it.
+    c=Image.new('RGBA',(W,H),NAVY); full_photo(assets.get('fault')); shade((0,0,W,H),(4,18,30,85)); shade((0,720,W,H),(4,18,30,215))
+    d=ImageDraw.Draw(c); brand_mark(d,True); slide_no(d,'01 / CUSTOMER ISSUE',True)
+    d.text((64,790),'CUSTOMER ISSUE',font=f(22,True),fill=CYAN)
+    txt(d,(64,842),value(data,'customer_issue') or 'Communication fault',48,'white',True,900,5)
+    d.line((64,1015,520,1015),fill=CYAN,width=5)
+    d.text((64,1050),'FAULT CATEGORY',font=f(18,True),fill='#BFEFFF')
+    txt(d,(64,1090),value(data,'fault_category') or 'Communication Fault',31,'white',True,850,5)
     c.convert('RGB').save(out/'02_customer_issue.png',quality=95)
 
-    # 3: diagnosis page with asymmetry and a strong finding block
-    c=Image.new('RGBA',(W,H),PALE); d=ImageDraw.Draw(c); header(c,d,assets,'02 / DIAGNOSIS')
-    txt(d,(64,178),'ROOT CAUSE\nIDENTIFIED',58,NAVY,True,900,2)
-    photo_panel(c,assets.get('diagnosis'),(64,405,952,330),28,True,'#A9C5DA')
-    d.rounded_rectangle((64,780,1016,1030),radius=30,fill=NAVY)
-    d.text((104,825),'DIAGNOSTIC FINDING',font=f(19,True),fill=CYAN)
-    txt(d,(104,878),value(data,'diagnosis') or 'Module communication and coding issue identified',35,'white',True,820,7)
-    d.text((64,1110),'EQUIPMENT',font=f(19,True),fill=BLUE)
-    txt(d,(64,1150),value(data,'equipment') or 'OEM Diagnostic Equipment',29,INK,True,900,7)
+    # 3: diagnosis page: a clean split screen, with finding carried on the photo edge.
+    c=Image.new('RGBA',(W,H),PALE); d=ImageDraw.Draw(c); brand_mark(d); slide_no(d,'02 / DIAGNOSIS')
+    photo_panel(c,assets.get('diagnosis'),(0,170,1080,650),0,True)
+    shade((0,170,1080,820),(8,24,39,35))
+    d.rounded_rectangle((54,690,1026,1030),radius=34,fill=NAVY)
+    d.text((94,744),'ROOT CAUSE IDENTIFIED',font=f(21,True),fill=CYAN)
+    txt(d,(94,798),value(data,'diagnosis') or 'Communication fault identified',40,'white',True,850,6)
+    d.line((94,930,520,930),fill='#456A83',width=2)
+    d.text((94,966),'EQUIPMENT',font=f(17,True),fill='#A9CFE5')
+    txt(d,(94,1000),value(data,'equipment') or 'OEM Diagnostic Equipment',28,'white',True,820,4)
+    d.rounded_rectangle((54,1120,1026,1260),radius=24,fill='#DCEAF2')
+    d.text((94,1150),'DIAGNOSTIC WORKFLOW',font=f(17,True),fill=BLUE)
+    d.text((94,1192),'SCAN  ·  IDENTIFY  ·  CONFIGURE',font=f(25,True),fill=NAVY)
     c.convert('RGB').save(out/'03_diagnosis.png',quality=95)
 
-    # 4: programming page; photo is a side proof rather than the main canvas
-    c=Image.new('RGBA',(W,H),NAVY); d=ImageDraw.Draw(c)
-    # On the dark programming card the white brand capsule is kept explicit;
-    # it preserves the logo's fine light strokes at phone-size previews.
-    d.rounded_rectangle((48,32,246,106), radius=18, fill='white')
-    d.text((72,56),'DEATON',font=f(22,True),fill=NAVY)
-    d.text((157,56),'AUTO',font=f(22,True),fill=BLUE)
-    d.text((1016,60),'03 / PROGRAMMING',font=f(18,True),fill=CYAN,anchor='ra'); d.line((64,142,1016,142),fill='#29465F',width=2)
-    txt(d,(64,180),'REMOTE\nPROGRAMMING',64,'white',True,900,2)
-    txt(d,(64,420),'THE SERVICE',20,CYAN,True,900,8)
-    txt(d,(64,465),service or 'Remote ECU Programming',42,'white',True,900,8)
-    txt(d,(64,585),value(data,'programming_detail') or 'Remote programming performed and configuration restored',34,'#DCE8F3',True,850,8)
-    photo_panel(c,assets.get('programming'),(64,820,952,350),28,True,'#4D789D')
-    d.text((64,1260),'DEATON AUTO  ·  WORLDWIDE REMOTE PROGRAMMING',font=f(18,True),fill=CYAN)
+    # 4: programming page: photo cuts through the copy instead of sitting below it.
+    c=Image.new('RGBA',(W,H),NAVY); d=ImageDraw.Draw(c); brand_mark(d,True); slide_no(d,'03 / PROGRAMMING',True)
+    txt(d,(64,190),'REMOTE\nPROGRAMMING',64,'white',True,900,2)
+    d.text((64,430),'THE SERVICE',font=f(20,True),fill=CYAN)
+    txt(d,(64,478),service or 'Remote ECU Programming',40,'white',True,900,6)
+    photo_panel(c,assets.get('programming'),(64,650,952,390),28,True,'#4D789D')
+    d.rounded_rectangle((64,1010,1016,1200),radius=26,fill='#102F49')
+    d.text((98,1050),'PROCESS',font=f(18,True),fill=CYAN)
+    txt(d,(98,1090),value(data,'programming_detail') or 'Remote programming performed and configuration restored',30,'white',True,830,5)
+    d.text((64,1260),'YH  ·  WORLDWIDE REMOTE PROGRAMMING',font=f(18,True),fill=CYAN)
     c.convert('RGB').save(out/'04_programming.png',quality=95)
 
-    # 5: result page; clearly independent closing card
-    c=Image.new('RGBA',(W,H),PALE); d=ImageDraw.Draw(c); header(c,d,assets,'04 / VERIFIED RESULT')
-    d.ellipse((64,205,148,289),fill=BLUE); d.text((106,246),'✓',font=f(52,True),fill='white',anchor='mm')
-    txt(d,(180,210),'REPAIR\nCOMPLETED',60,NAVY,True,820,2)
-    d.rounded_rectangle((64,400,1016,650),radius=30,fill='white',outline='#D2E0EA',width=2)
-    d.text((104,445),'FINAL RESULT',font=f(19,True),fill=BLUE)
-    txt(d,(104,495),value(data,'result','final_result') or 'Repair completed successfully',38,INK,True,830,8)
-    d.rounded_rectangle((64,700,1016,850),radius=24,fill=BLUE)
-    d.text((104,740),'VERIFICATION',font=f(18,True),fill='#BFEFFF')
-    txt(d,(104,780),value(data,'verification') or 'Functions tested and verified',29,'white',True,830,4)
-    photo_panel(c,assets.get('result'),(64,910,952,310),28,True,'#A9C5DA')
+    # 5: result page: photo and verified outcome share one closing composition.
+    c=Image.new('RGBA',(W,H),PALE); d=ImageDraw.Draw(c); brand_mark(d); slide_no(d,'04 / VERIFIED RESULT')
+    d.ellipse((64,190,154,280),fill=BLUE); d.text((109,235),'✓',font=f(52,True),fill='white',anchor='mm')
+    txt(d,(190,194),'REPAIR\nCOMPLETED',58,NAVY,True,820,2)
+    photo_panel(c,assets.get('result'),(0,430,1080,430),0,True)
+    shade((0,430,1080,860),(8,24,39,45))
+    d.rounded_rectangle((54,800,1026,1110),radius=34,fill=NAVY)
+    d.text((94,850),'FINAL RESULT',font=f(20,True),fill=CYAN)
+    txt(d,(94,902),value(data,'result','final_result') or 'Repair completed successfully',39,'white',True,850,6)
+    d.line((94,1005,520,1005),fill='#456A83',width=2)
+    d.text((94,1040),'VERIFICATION',font=f(17,True),fill='#A9CFE5')
+    txt(d,(94,1075),value(data,'verification') or 'Functions tested and verified',29,'white',True,820,4)
+    d.rounded_rectangle((54,1170,1026,1280),radius=24,fill='#DCEAF2')
+    d.text((94,1200),'DEATON AUTO  ·  REMOTE VEHICLE PROGRAMMING',font=f(18,True),fill=NAVY)
     c.convert('RGB').save(out/'05_verified_result.png',quality=95)
     return [str(p.resolve()) for p in sorted(out.glob('*.png'))]
 
