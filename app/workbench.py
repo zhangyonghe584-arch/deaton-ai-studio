@@ -270,6 +270,8 @@ class WorkbenchPage(QWidget):
             "dtc_codes": "例如：U110100、U112100",
             "equipment": "例如：ODIS / 原厂诊断设备",
             "verification": "例如：最终扫描通过，功能测试正常",
+            "contact": "例如：WhatsApp +86 138 9855 2107",
+            "website": "例如：https://deatonauto.com",
         }.get(key, "请选择或输入")
 
     def _ai_page(self):
@@ -549,4 +551,3 @@ class ApplicationWindow(QMainWindow):
             page.findChild(QFrame, "panel").layout().addWidget(api_button)
         except (FileNotFoundError, ValueError) as error:
             QMessageBox.warning(self, "无法打开案例", str(error))
-
