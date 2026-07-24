@@ -33,6 +33,8 @@ CASE_FIELDS = (
     ("final_status", "案例结论"),
     ("equipment", "使用设备"),
     ("verification", "修复验证"),
+    ("contact", "联系方式"),
+    ("website", "官网地址"),
 )
 
 DEFAULT_OPTIONS = {
@@ -54,4 +56,3 @@ DEFAULT_OPTIONS = {
 }
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
-
