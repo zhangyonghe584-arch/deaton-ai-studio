@@ -551,3 +551,21 @@ class ApplicationWindow(QMainWindow):
             page.findChild(QFrame, "panel").layout().addWidget(api_button)
         except (FileNotFoundError, ValueError) as error:
             QMessageBox.warning(self, "无法打开案例", str(error))
+
+
+def main() -> int:
+    """启动工作台；兼容直接运行 workbench 模块的方式。"""
+    import sys
+
+    from PySide6.QtWidgets import QApplication
+
+    application = QApplication(sys.argv)
+    application.setApplicationName("Deaton Auto Image Case Studio")
+    window = ApplicationWindow()
+    window.show()
+    return application.exec()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
