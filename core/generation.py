@@ -43,4 +43,3 @@ class LocalGenerationService:
                 shutil.copy2(source, target)
                 copied.append(target)
         return copied
-
