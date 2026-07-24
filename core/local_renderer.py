@@ -15,6 +15,14 @@ MIST = "#E7E8E8"
 ORANGE = "#D86F2A"
 BLUE = "#123B68"
 CJK = re.compile(r"[\u3400-\u9fff\uf900-\ufaff]")
+STYLE = "editorial"
+
+def palette():
+    if STYLE == "dark":
+        return {"paper": "#101820", "ink": "#F4F7F8", "blue": "#8FD3FF", "accent": "#FFB45C", "mist": "#27343D"}
+    if STYLE == "contrast":
+        return {"paper": "#FFFFFF", "ink": "#101820", "blue": "#0B4F71", "accent": "#E4572E", "mist": "#E9EEF0"}
+    return {"paper": "#F5F1E9", "ink": "#17212B", "blue": "#164A67", "accent": "#C94F2D", "mist": "#E4E7E5"}
 
 
 def english(value, fallback="CASE UPDATE"):
@@ -88,12 +96,13 @@ def draw_field_list(draw, data, fields, start_y, max_width=900):
     if not visible:
         return y
     # More content gets a smaller type size and tighter spacing automatically.
-    value_size = 28 if len(visible) <= 3 else 24 if len(visible) <= 5 else 21
+    p = palette()
+    value_size = 36 if len(visible) <= 3 else 31 if len(visible) <= 5 else 27
     for label, value in visible:
         lines = text_lines(value, font(value_size, True), max_width - 70)
-        text(draw, (70, y), label, 15, ORANGE, True)
+        text(draw, (70, y), label, 18, p["accent"], True)
         for line in lines[:2]:
-            text(draw, (70, y + 30), line, value_size, INK, True)
+            text(draw, (70, y + 34), line, value_size, p["ink"], True)
             y += value_size + 8
         y += 24
     return y
@@ -116,8 +125,9 @@ def text_lines(value, typeface, width):
 
 def header(canvas: Image.Image, logo: Image.Image | None):
     draw = ImageDraw.Draw(canvas)
-    draw.rectangle((0, 0, W, 160), fill=PAPER)
-    draw.rectangle((0, 154, W, 160), fill=ORANGE)
+    p = palette()
+    draw.rectangle((0, 0, W, 178), fill=p["paper"])
+    draw.rectangle((0, 170, W, 178), fill=p["accent"])
     if logo:
         canvas.alpha_composite(logo, (62, 30))
     # The header is intentionally logo-only. Do not add case IDs, page numbers,
@@ -126,25 +136,27 @@ def header(canvas: Image.Image, logo: Image.Image | None):
 
 def footer(canvas: Image.Image):
     draw = ImageDraw.Draw(canvas)
-    draw.line((64, 1816, 1016, 1816), fill="#C8CCCD", width=2)
+    p = palette()
+    draw.line((64, 1816, 1016, 1816), fill=p["mist"], width=2)
     text(draw, (64, 1850), "DEATON AUTO · REMOTE PROGRAMMING", 16, "#697176", True)
 
 
 def cover(data, assets, logo):
+    p = palette()
     photo = open_image(assets.get("vehicle", ""), (W, H), "Vehicle image").convert("RGBA")
     shade = Image.new("RGBA", (W, H), (10, 22, 36, 0))
     shade_draw = ImageDraw.Draw(shade)
-    shade_draw.rectangle((0, 920, W, H), fill=(9, 23, 38, 220))
+    shade_draw.rectangle((0, 880, W, H), fill=(9, 23, 38, 230))
     canvas = Image.alpha_composite(photo, shade)
     header(canvas, logo)
     draw = ImageDraw.Draw(canvas)
-    text(draw, (64, 1045), "REMOTE PROGRAMMING CASE", 20, "#DDE8F3", True)
+    text(draw, (64, 1015), "REMOTE PROGRAMMING CASE", 25, p["accent"], True)
     brand = supplied(data, "brand") or "VEHICLE"
     model = supplied(data, "model") or "REMOTE SERVICE"
     text(draw, (64, 1100), brand, 36, PAPER, True)
-    text(draw, (60, 1155), model, 78, PAPER, True)
-    draw.rectangle((64, 1280, 510, 1287), fill=ORANGE)
-    y = 1320
+    text(draw, (60, 1125), model, 96, PAPER, True)
+    draw.rectangle((64, 1270, 720, 1282), fill=p["accent"])
+    y = 1325
     y = draw_field_list(draw, data, [("service", "SERVICE"), ("year", "YEAR"), ("mileage", "MILEAGE"), ("location", "LOCATION")], y, 900)
     if supplied(data, "result"):
         text(draw, (64, min(y + 35, 1570)), "RESULT", 17, "#B3C9DC", True)
@@ -153,30 +165,33 @@ def cover(data, assets, logo):
 
 
 def detail_page(data, assets, logo, slot, title, section):
-    canvas = Image.new("RGBA", (W, H), PAPER)
+    p = palette()
+    canvas = Image.new("RGBA", (W, H), p["paper"])
     header(canvas, logo)
     photo = open_image(assets.get(slot, ""), (952, 690), section)
     canvas.alpha_composite(photo.convert("RGBA"), (64, 220))
     draw = ImageDraw.Draw(canvas)
-    text(draw, (64, 980), section, 18, ORANGE, True)
-    text(draw, (64, 1030), title, 56, BLUE, True)
-    draw.line((64, 1115, 1016, 1115), fill=ORANGE, width=5)
+    text(draw, (64, 980), section, 24, p["accent"], True)
+    text(draw, (64, 1025), title, 72, p["blue"], True)
+    draw.line((64, 1125, 1016, 1125), fill=p["accent"], width=8)
     field_map = {
         "fault": [("customer_issue", "CUSTOMER ISSUE"), ("fault_category", "FAULT CATEGORY"), ("dtc_codes", "FAULT CODES / SYMPTOMS"), ("model", "VEHICLE")],
         "diagnosis": [("diagnosis", "DIAGNOSTIC FINDING"), ("fault_category", "FAULT CATEGORY"), ("equipment", "DIAGNOSTIC EQUIPMENT")],
         "programming": [("service", "SERVICE COMPLETED"), ("programming", "PROGRAMMING WORK"), ("programming_detail", "PROCESS")],
         "result": [("result", "RESULT"), ("final_status", "FINAL STATUS"), ("verification", "VERIFICATION"), ("contact", "CONTACT"), ("website", "WEBSITE")],
     }
-    draw_field_list(draw, data, field_map.get(slot, []), 1195, 900)
+    draw_field_list(draw, data, field_map.get(slot, []), 1205, 900)
     footer(canvas)
     return canvas
 
 
 def generate(parameters: Path) -> list[Path]:
+    global STYLE
     payload = json.loads(parameters.read_text(encoding="utf-8"))
     case_dir = Path(payload["case_dir"])
     output_dir = case_dir / "output"
     output_dir.mkdir(exist_ok=True)
+    STYLE = str(payload.get("style", "editorial"))
     data = dict(payload["information"])
     data["ai_plan"] = payload.get("ai_plan", {})
     assets = payload["assets"]
@@ -200,3 +215,4 @@ if __name__ == "__main__":
     parameter_file = Path(sys.argv[1]).resolve()
     paths = generate(parameter_file)
     print(json.dumps({"files": [str(path) for path in paths], "generated_at": datetime.now(timezone.utc).isoformat()}))
+
